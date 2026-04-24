@@ -238,6 +238,46 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertNotIn("今天天气", output)
         save_mobile_mock.assert_called_once_with("15712459595")
 
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value="15712459595")
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_main_outputs_debug_logs_to_stderr(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+    ) -> None:
+        fetch_json_mock.side_effect = [
+            {"data": {"goods": [], "stores": [], "orders": None}},
+            {"data": {"city": "Beijing", "condition": "sunny", "temperatureC": 26}},
+        ]
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--debug"],
+        ), patch("sys.stdout", stdout), patch("sys.stderr", stderr):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("DEBUG recommend_drink: resolved mobile from local state", stderr.getvalue())
+        self.assertIn("DEBUG recommend_drink: fetching context from http://127.0.0.1:8020/skill/xinyi/context?mobile=15712459595", stderr.getvalue())
+        self.assertIn("DEBUG recommend_drink: fetching weather from http://127.0.0.1:8020/skill/xinyi/weather", stderr.getvalue())
+        self.assertIn("## 用户上下文", stdout.getvalue())
+        save_mobile_mock.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

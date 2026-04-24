@@ -9,14 +9,21 @@ from pathlib import Path
 from build_response import render_stores_section
 
 
+def debug_log(enabled: bool, message: str) -> None:
+    if enabled:
+        print(f"DEBUG fetch_stores: {message}", file=sys.stderr)
+
+
 def load_config() -> dict:
     config_path = Path(__file__).resolve().parents[1] / "config" / "defaults.json"
     return json.loads(config_path.read_text())
 
 
 def main() -> int:
+    debug_enabled = "--debug" in sys.argv[1:]
     config = load_config()
     url = f"{config['apiBaseUrl'].rstrip('/')}/skill/xinyi/stores"
+    debug_log(debug_enabled, f"fetching stores from {url}")
 
     with urllib.request.urlopen(url, timeout=config["timeoutSeconds"]) as response:
         payload = json.loads(response.read().decode("utf-8"))

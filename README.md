@@ -7,6 +7,12 @@
 3. 查询天气
 4. 基于商品、门店、天气和可选订单历史做饮品推荐
 
+## 仓库与发布目录
+
+- 当前 GitHub 仓库根目录是 `xinyi-drink/`
+- 实际对外发布与安装使用的 Skill 包根目录是 `xinyi-drink/skill/`
+- 因此仓库根目录下的文档、安装命令与文件路径，都应以 `skill/` 作为真实 Skill 根目录来理解
+
 ## 当前事实
 
 - 推荐能力走 `/skill/xinyi/context` 聚合上下文接口。
@@ -22,22 +28,24 @@
 
 | 平台 | 安装目录 | 安装命令 |
 | --- | --- | --- |
-| Claude Code | `~/.claude/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.claude/skills/xinyi-drink` |
-| Cursor | `.cursor/rules/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink .cursor/rules/xinyi-drink` |
-| Codex CLI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
-| OpenClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
-| Hermes | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
-| QClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
-| LobsterAI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
-| WorkBuddy | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+| Claude Code | `~/.claude/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform claude-code` |
+| Cursor | `.cursor/rules/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform cursor` |
+| Codex CLI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform codex` |
+| OpenClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform openclaw` |
+| Hermes | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform hermes` |
+| QClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform qclaw` |
+| LobsterAI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform lobsterai` |
+| WorkBuddy | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform workbuddy` |
 
-如果你不确定自己属于哪一类平台，但本地使用的是 `~/.agents/skills/` 规范，也可以直接安装到：
+如果你不确定自己属于哪一类平台，但本地使用的是 `~/.agents/skills/` 规范，也可以这样安装：
 
 ```bash
-git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink
+cd xinyi-drink/skill
+bash install.sh --platform universal
 ```
 
-更完整的平台说明见 [平台安装说明](references/platform-install.md)。
+更完整的平台说明见 [平台安装说明](skill/references/platform-install.md)。
 
 ## 使用示例
 
@@ -59,9 +67,9 @@ git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drin
 
 ## 脚本
 
-- `scripts/claim_reward.py`: 调用活动接口；成功或已参与时会补充门店信息和推荐饮品文案
-- `scripts/fetch_stores.py`: 调用门店接口，并输出门店表格
-- `scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
+- `skill/scripts/claim_reward.py`: 调用活动接口；成功或已参与时会补充门店信息和推荐饮品文案
+- `skill/scripts/fetch_stores.py`: 调用门店接口，并输出门店表格
+- `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
 
 ## 接口
 
@@ -80,8 +88,8 @@ git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drin
 
 ## 参考资料
 
-- [能力地图](references/capability-map.md)
-- [注意事项](references/gotchas.md)
-- [隐私边界](references/privacy-boundaries.md)
-- [平台安装说明](references/platform-install.md)
-- [发布前检查清单](spec/release-readiness-checklist.md)
+- [能力地图](skill/references/capability-map.md)
+- [注意事项](skill/references/gotchas.md)
+- [隐私边界](skill/references/privacy-boundaries.md)
+- [平台安装说明](skill/references/platform-install.md)
+- [发布前检查清单](skill/spec/release-readiness-checklist.md)

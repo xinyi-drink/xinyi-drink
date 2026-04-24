@@ -11,6 +11,11 @@ from build_response import render_recommendation_context
 from user_state import clear_mobile, load_mobile, save_mobile
 
 
+def debug_log(enabled: bool, message: str) -> None:
+    if enabled:
+        print(f"DEBUG recommend_drink: {message}", file=sys.stderr)
+
+
 def load_config() -> dict:
     config_path = Path(__file__).resolve().parents[1] / "config" / "defaults.json"
     return json.loads(config_path.read_text())
@@ -45,12 +50,21 @@ def main() -> int:
     parser.add_argument("--query", help="用户问题或饮品名称")
     parser.add_argument("--scene", help="场景，如提神、下午茶、轻负担")
     parser.add_argument("--preference", help="偏好，如咖啡、茶、低卡")
+    parser.add_argument("--debug", action="store_true", help="输出调试信息到 stderr")
     args = parser.parse_args()
 
     if args.clear_mobile:
         clear_mobile()
+        debug_log(args.debug, "cleared saved mobile")
 
     resolved_mobile = args.mobile or load_mobile()
+    if args.mobile:
+        debug_log(args.debug, "resolved mobile from cli argument")
+    elif resolved_mobile:
+        debug_log(args.debug, "resolved mobile from local state")
+    else:
+        debug_log(args.debug, "no mobile resolved")
+
     if args.mobile:
         save_mobile(args.mobile)
 
@@ -61,12 +75,17 @@ def main() -> int:
     if resolved_mobile:
         query_suffix = f"?mobile={resolved_mobile}"
 
-    context_response = fetch_json(
-        f"{base_url}/skill/xinyi/context{query_suffix}",
-        config["timeoutSeconds"],
-    )
+    context_url = f"{base_url}/skill/xinyi/context{query_suffix}"
+    debug_log(args.debug, f"fetching context from {context_url}")
+    context_response = fetch_json(context_url, config["timeoutSeconds"])
     context_data = context_response.get("data", {})
+
+    debug_log(args.debug, f"fetching weather from {base_url}/skill/xinyi/weather")
     weather_data = fetch_weather(base_url, config["timeoutSeconds"])
+    debug_log(
+        args.debug,
+        "weather api returned data" if weather_data is not None else "weather api unavailable; using generic recommendation copy",
+    )
 
     rendered_context = render_recommendation_context(
         context={

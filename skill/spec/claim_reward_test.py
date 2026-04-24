@@ -326,6 +326,44 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertNotIn("建议您喝", output)
         save_mobile_mock.assert_called_once_with("15712459595")
 
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_claim_script_outputs_debug_logs_to_stderr(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        response = urlopen_mock.return_value.__enter__.return_value
+        response.read.return_value = (
+            '{"code":200,"data":{"kind":"unregistered","successCount":0,"failCount":0,'
+            '"items":[],"user":null}}'
+        ).encode("utf-8")
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "15712459595", "--debug"],
+        ), patch("sys.stdout", stdout), patch("sys.stderr", stderr):
+            exit_code = claim_reward.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("DEBUG claim_reward: posting claim request to http://127.0.0.1:8020/skill/xinyi/claim", stderr.getvalue())
+        self.assertIn("DEBUG claim_reward: user not found; skip saving mobile", stderr.getvalue())
+        self.assertIn("领取结果：未找到登录用户", stdout.getvalue())
+        save_mobile_mock.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

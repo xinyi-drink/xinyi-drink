@@ -49,6 +49,37 @@ class FetchStoresScriptTest(unittest.TestCase):
         self.assertIn("支持无人模式", output)
         self.assertNotIn('"stores"', output)
 
+    @patch.object(
+        fetch_stores,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_fetch_stores_outputs_debug_logs_to_stderr(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+    ) -> None:
+        response = urlopen_mock.return_value.__enter__.return_value
+        response.read.return_value = '{"data":{"stores":[]}}'.encode("utf-8")
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["fetch_stores.py", "--debug"],
+        ), patch("sys.stdout", stdout), patch("sys.stderr", stderr):
+            exit_code = fetch_stores.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("DEBUG fetch_stores: fetching stores from http://127.0.0.1:8020/skill/xinyi/stores", stderr.getvalue())
+        self.assertIn("## 门店列表", stdout.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()
