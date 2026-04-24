@@ -26,15 +26,17 @@ while [ $# -gt 0 ]; do
   claude-code   -> ~/.claude/skills/
   cursor        -> .cursor/rules/
   codex         -> ~/.agents/skills/
-  openclaw      -> ~/.agents/skills/
-  hermes        -> ~/.agents/skills/
+  openclaw      -> ~/.openclaw/skills/
+  hermes        -> ~/.hermes/skills/
   qclaw         -> ~/.agents/skills/
   lobsterai     -> ~/.agents/skills/
   workbuddy     -> ~/.agents/skills/
   universal     -> ~/.agents/skills/
 
 说明：
-  - openclaw / hermes / qclaw / lobsterai / workbuddy / codex 统一安装到 ~/.agents/skills/
+  - openclaw 安装到 ~/.openclaw/skills/
+  - hermes 安装到 ~/.hermes/skills/
+  - qclaw / lobsterai / workbuddy / codex / universal 安装到 ~/.agents/skills/
   - claude-code 安装到 ~/.claude/skills/
   - cursor 安装到 .cursor/rules/
 EOF
@@ -48,7 +50,11 @@ EOF
 done
 
 if [ -z "$PLATFORM" ]; then
-  if [ -d "$HOME/.claude" ]; then
+  if [ -d "$HOME/.openclaw" ]; then
+    PLATFORM="openclaw"
+  elif [ -d "$HOME/.hermes" ]; then
+    PLATFORM="hermes"
+  elif [ -d "$HOME/.claude" ]; then
     PLATFORM="claude-code"
   elif [ -d "$HOME/.agents" ]; then
     PLATFORM="universal"
@@ -61,7 +67,13 @@ case "$PLATFORM" in
   claude-code)
     DEST="$HOME/.claude/skills/$SKILL_NAME"
     ;;
-  universal|codex|openclaw|hermes|qclaw|lobsterai|lobsterAI|workbuddy)
+  openclaw)
+    DEST="$HOME/.openclaw/skills/$SKILL_NAME"
+    ;;
+  hermes)
+    DEST="$HOME/.hermes/skills/$SKILL_NAME"
+    ;;
+  universal|codex|qclaw|lobsterai|lobsterAI|workbuddy)
     DEST="$HOME/.agents/skills/$SKILL_NAME"
     ;;
   cursor)

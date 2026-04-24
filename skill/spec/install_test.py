@@ -39,6 +39,56 @@ class InstallScriptTest(unittest.TestCase):
             )
             self.assertIn("告知小程序绑定的手机号", result.stdout)
 
+    def test_install_script_maps_openclaw_to_openclaw_skills_dir(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            home_dir = tmp_path / "home"
+            home_dir.mkdir()
+
+            result = subprocess.run(
+                ["sh", str(skill_root / "install.sh"), "--dry-run", "--platform", "openclaw"],
+                cwd=skill_root,
+                env={
+                    **dict(__import__("os").environ),
+                    "HOME": str(home_dir),
+                },
+                capture_output=True,
+                check=True,
+                text=True,
+            )
+
+            self.assertIn(
+                str(home_dir / ".openclaw" / "skills" / "xinyi-drink"),
+                result.stdout,
+            )
+
+    def test_install_script_maps_hermes_to_hermes_skills_dir(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            home_dir = tmp_path / "home"
+            home_dir.mkdir()
+
+            result = subprocess.run(
+                ["sh", str(skill_root / "install.sh"), "--dry-run", "--platform", "hermes"],
+                cwd=skill_root,
+                env={
+                    **dict(__import__("os").environ),
+                    "HOME": str(home_dir),
+                },
+                capture_output=True,
+                check=True,
+                text=True,
+            )
+
+            self.assertIn(
+                str(home_dir / ".hermes" / "skills" / "xinyi-drink"),
+                result.stdout,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

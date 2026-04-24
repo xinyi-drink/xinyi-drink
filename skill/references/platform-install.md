@@ -1,12 +1,53 @@
 # 平台安装说明
 
+## OpenClaw
+
+安装目录：
+
+```bash
+~/.openclaw/skills/xinyi-drink
+```
+
+推荐安装命令：
+
+```bash
+npx clawhub@latest install xinyi-drink
+```
+
+如果你是从本仓库本地安装：
+
+```bash
+git clone https://github.com/xinyi-drink/xinyi-drink
+cd xinyi-drink/skill
+bash install.sh --platform openclaw
+```
+
+补充说明：
+
+- 你当前本机实测 `npx clawhub@latest install xinyi-drink` 会安装到 `~/.openclaw/skills/`
+- OpenClaw WebUI 可以直接识别这个目录下的 Skill
+
+## Hermes
+
+安装目录：
+
+```bash
+~/.hermes/skills/xinyi-drink
+```
+
+安装命令：
+
+```bash
+git clone https://github.com/xinyi-drink/xinyi-drink
+cd xinyi-drink/skill
+bash install.sh --platform hermes
+```
+
 ## 使用 `~/.agents/skills/` 的平台
 
 以下平台都明确安装到同一个目录：
 
 - Codex CLI
-- OpenClaw
-- Hermes
 - QClaw
 - LobsterAI
 - WorkBuddy
@@ -25,23 +66,14 @@ cd xinyi-drink/skill
 bash install.sh --platform universal
 ```
 
-如果使用安装脚本，以下平台参数都已明确支持，并且都会安装到上面的同一目录：
+如果使用安装脚本，以下平台参数都会安装到上面的同一目录：
 
 ```bash
-bash install.sh --platform openclaw
-bash install.sh --platform hermes
 bash install.sh --platform qclaw
 bash install.sh --platform lobsterai
 bash install.sh --platform workbuddy
 bash install.sh --platform codex
 bash install.sh --platform universal
-```
-
-如果你当前是在仓库根目录 `xinyi-drink/`，先进入实际 Skill 包目录：
-
-```bash
-cd skill
-bash install.sh --platform openclaw
 ```
 
 安装完成后，优先直接自然提问；具体触发方式与示例参考 `SKILL.md`。

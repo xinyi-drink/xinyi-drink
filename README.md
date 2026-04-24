@@ -31,8 +31,8 @@
 | Claude Code | `~/.claude/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform claude-code` |
 | Cursor | `.cursor/rules/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform cursor` |
 | Codex CLI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform codex` |
-| OpenClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform openclaw` |
-| Hermes | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform hermes` |
+| OpenClaw | `~/.openclaw/skills/xinyi-drink` | `npx clawhub@latest install xinyi-drink` |
+| Hermes | `~/.hermes/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform hermes` |
 | QClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform qclaw` |
 | LobsterAI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform lobsterai` |
 | WorkBuddy | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform workbuddy` |
@@ -46,6 +46,11 @@ bash install.sh --platform universal
 ```
 
 更完整的平台说明见 [平台安装说明](skill/references/platform-install.md)。
+
+补充说明：
+
+- OpenClaw 推荐直接使用 `npx clawhub@latest install xinyi-drink`，这样会安装到 `~/.openclaw/skills/`，并且 WebUI 可直接识别。
+- 如果你是从本仓库本地安装到 OpenClaw，也可以执行 `bash install.sh --platform openclaw`。
 
 ## 使用示例
 
