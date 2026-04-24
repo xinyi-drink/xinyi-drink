@@ -1,0 +1,54 @@
+from __future__ import annotations
+
+import io
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+
+import fetch_stores
+
+
+class FetchStoresScriptTest(unittest.TestCase):
+    @patch.object(
+        fetch_stores,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_fetch_stores_outputs_table_text(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+    ) -> None:
+        response = urlopen_mock.return_value.__enter__.return_value
+        response.read.return_value = (
+            '{"data":{"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号",'
+            '"businessStatus":1,"operatingStatus":1,"realtimeState":1,'
+            '"labels":[{"name":"休息区"}],"makingCupCount":4,"makingCupMinutes":18,'
+            '"storeType":2,"supportUnattendedMode":1}]}}'
+        ).encode("utf-8")
+
+        stdout = io.StringIO()
+
+        with patch("sys.stdout", stdout):
+            exit_code = fetch_stores.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("## 门店列表", output)
+        self.assertIn("幂茶幂咖望京店", output)
+        self.assertIn("休息区", output)
+        self.assertIn("Box 门店", output)
+        self.assertIn("支持无人模式", output)
+        self.assertNotIn('"stores"', output)
+
+
+if __name__ == "__main__":
+    unittest.main()
