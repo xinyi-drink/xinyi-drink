@@ -27,6 +27,17 @@ def fetch_json(url: str, timeout: int) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+def post_json(url: str, timeout: int, payload: dict) -> dict:
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
 def fetch_weather(base_url: str, timeout: int) -> dict | None:
     try:
         weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
@@ -67,21 +78,41 @@ def main() -> int:
 
     if args.mobile:
         save_mobile(args.mobile)
+        debug_log(args.debug, "saved mobile from cli argument before claim lookup")
 
     config = load_config()
     base_url = config["apiBaseUrl"].rstrip("/")
+    timeout = config["timeoutSeconds"]
+
+    mobile_for_context = resolved_mobile
+    if resolved_mobile:
+        claim_url = f"{base_url}/skill/xinyi/claim"
+        debug_log(args.debug, f"posting claim request to {claim_url}")
+        claim_response = post_json(
+            claim_url,
+            timeout,
+            {"mobile": resolved_mobile},
+        )
+        claim_data = claim_response.get("data", {})
+        if claim_data.get("user"):
+            debug_log(args.debug, "claim matched user")
+        else:
+            debug_log(
+                args.debug,
+                "claim did not match user; keep saved mobile and continue with context lookup",
+            )
 
     query_suffix = ""
-    if resolved_mobile:
-        query_suffix = f"?mobile={resolved_mobile}"
+    if mobile_for_context:
+        query_suffix = f"?mobile={mobile_for_context}"
 
     context_url = f"{base_url}/skill/xinyi/context{query_suffix}"
     debug_log(args.debug, f"fetching context from {context_url}")
-    context_response = fetch_json(context_url, config["timeoutSeconds"])
+    context_response = fetch_json(context_url, timeout)
     context_data = context_response.get("data", {})
 
     debug_log(args.debug, f"fetching weather from {base_url}/skill/xinyi/weather")
-    weather_data = fetch_weather(base_url, config["timeoutSeconds"])
+    weather_data = fetch_weather(base_url, timeout)
     debug_log(
         args.debug,
         "weather api returned data" if weather_data is not None else "weather api unavailable; using generic recommendation copy",
@@ -89,8 +120,8 @@ def main() -> int:
 
     rendered_context = render_recommendation_context(
         context={
-            "mobile": resolved_mobile,
-            "mobileFromStore": bool(resolved_mobile and not args.mobile),
+            "mobile": mobile_for_context,
+            "mobileFromStore": bool(mobile_for_context and not args.mobile),
             "preference": args.preference,
             "query": args.query,
             "scene": args.scene,

@@ -12,6 +12,7 @@ import recommend_drink
 
 
 class RecommendDrinkScriptTest(unittest.TestCase):
+    @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
     @patch.object(recommend_drink, "load_mobile", return_value=None)
     @patch.object(
@@ -29,7 +30,19 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         _load_config_mock,
         _load_mobile_mock,
         save_mobile_mock,
+        post_json_mock,
     ) -> None:
+        events: list[tuple[str, str]] = []
+        save_mobile_mock.side_effect = lambda mobile: events.append(("save", mobile))
+        post_json_mock.side_effect = lambda url, timeout, payload: (
+            events.append(("claim", payload["mobile"])),
+            {
+                "data": {
+                    "kind": "already_claimed",
+                    "user": {"mobile": "15712459595", "nickname": "双龙"},
+                }
+            },
+        )[1]
         fetch_json_mock.side_effect = [
             {
                 "data": {
@@ -49,6 +62,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                         {
                             "name": "幂茶幂咖|望京店",
                             "address": "北京市朝阳区望京街9号\n商业楼1层",
+                            "facilities": "外摆区，休息区，宠物友好。",
+                            "storeMobile": "010-12345678",
                             "businessStatus": 1,
                             "labels": [{"name": "休息区"}],
                             "lat": "39.990326",
@@ -126,18 +141,42 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("## 门店列表", output)
         self.assertIn("## 订单历史", output)
         self.assertIn("## 推荐话术建议", output)
+        self.assertIn("## 回答要求", output)
+        self.assertIn("## 门店摘要建议", output)
         self.assertNotIn('"context"', output)
         self.assertIn("杨枝甘露\\|轻乳版", output)
         self.assertIn("正常冰\\|7分糖", output)
         self.assertIn("120<br>kcal", output)
         self.assertIn("北京市朝阳区望京街9号<br>商业楼1层", output)
+        self.assertIn("010-12345678", output)
+        self.assertIn("宠物友好", output)
+        self.assertIn("外摆区，休息区，宠物友好。", output)
         self.assertIn("休息区", output)
         self.assertIn("Box 门店", output)
         self.assertIn("支持无人模式", output)
         self.assertIn("制作中", output)
         self.assertIn("哇我们的老朋友", output)
         self.assertIn("挺舒服", output)
+        self.assertIn("至少给出 1-2 家具体门店", output)
+        self.assertIn("若有门店电话也一并给出", output)
+        self.assertIn("若门店返回了 facilities", output)
+        self.assertIn("门店名：幂茶幂咖|望京店", output)
+        self.assertIn("设施：外摆区，休息区，宠物友好。", output)
+        self.assertIn("特色：外摆区、休息区、宠物友好、支持无人模式、Box 门店", output)
         self.assertEqual(fetch_json_mock.call_count, 2)
+        self.assertEqual(post_json_mock.call_count, 1)
+        self.assertEqual(
+            post_json_mock.call_args_list[0].args,
+            (
+                "http://127.0.0.1:8020/skill/xinyi/claim",
+                5,
+                {"mobile": "15712459595"},
+            ),
+        )
+        self.assertEqual(
+            events[:2],
+            [("save", "15712459595"), ("claim", "15712459595")],
+        )
         self.assertEqual(
             fetch_json_mock.call_args_list[0].args,
             (
@@ -154,6 +193,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         )
         save_mobile_mock.assert_called_once_with("15712459595")
 
+    @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
     @patch.object(recommend_drink, "load_mobile", return_value=None)
     @patch.object(
@@ -171,7 +211,14 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         _load_config_mock,
         _load_mobile_mock,
         save_mobile_mock,
+        post_json_mock,
     ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "already_claimed",
+                "user": {"mobile": "15712459595", "nickname": "双龙"},
+            }
+        }
         fetch_json_mock.side_effect = [
             {
                 "data": {
@@ -236,8 +283,10 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("哇我们的老朋友，今天建议您喝葡萄毛尖轻咖", output)
         self.assertNotIn("今天天气", output)
+        self.assertEqual(post_json_mock.call_count, 1)
         save_mobile_mock.assert_called_once_with("15712459595")
 
+    @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
     @patch.object(recommend_drink, "load_mobile", return_value="15712459595")
     @patch.object(
@@ -255,7 +304,14 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         _load_config_mock,
         _load_mobile_mock,
         save_mobile_mock,
+        post_json_mock,
     ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "already_claimed",
+                "user": {"mobile": "15712459595", "nickname": "双龙"},
+            }
+        }
         fetch_json_mock.side_effect = [
             {"data": {"goods": [], "stores": [], "orders": None}},
             {"data": {"city": "Beijing", "condition": "sunny", "temperatureC": 26}},
@@ -273,10 +329,62 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("DEBUG recommend_drink: resolved mobile from local state", stderr.getvalue())
+        self.assertIn("DEBUG recommend_drink: posting claim request to http://127.0.0.1:8020/skill/xinyi/claim", stderr.getvalue())
         self.assertIn("DEBUG recommend_drink: fetching context from http://127.0.0.1:8020/skill/xinyi/context?mobile=15712459595", stderr.getvalue())
         self.assertIn("DEBUG recommend_drink: fetching weather from http://127.0.0.1:8020/skill/xinyi/weather", stderr.getvalue())
         self.assertIn("## 用户上下文", stdout.getvalue())
         save_mobile_mock.assert_not_called()
+
+    @patch.object(recommend_drink, "post_json")
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_main_does_not_save_or_use_mobile_when_claim_does_not_match_user(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "unregistered",
+                "user": None,
+            }
+        }
+        fetch_json_mock.side_effect = [
+            {"data": {"goods": [], "stores": [], "orders": None}},
+            {"data": {"city": "Beijing", "condition": "sunny", "temperatureC": 26}},
+        ]
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--mobile", "15712459595"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(post_json_mock.call_count, 1)
+        self.assertEqual(
+            fetch_json_mock.call_args_list[0].args,
+            (
+                "http://127.0.0.1:8020/skill/xinyi/context?mobile=15712459595",
+                5,
+            ),
+        )
+        save_mobile_mock.assert_called_once_with("15712459595")
 
 
 if __name__ == "__main__":

@@ -79,6 +79,28 @@ def render_text_section(title: str, lines: list[str]) -> str:
     )
 
 
+def pick_store_contact(store: dict[str, Any]) -> Any:
+    for key in ("storeMobile", "contactPhone", "phone", "telephone", "tel"):
+        value = store.get(key)
+        if value:
+            return value
+
+    return None
+
+
+def split_store_facilities(store: dict[str, Any]) -> list[str]:
+    facilities = store.get("facilities")
+    if not facilities:
+        return []
+
+    text = str(facilities).replace("，", ",").replace("。", ",")
+    return [item.strip() for item in text.split(",") if item.strip()]
+
+
+def render_store_facilities_text(store: dict[str, Any]) -> Any:
+    return store.get("facilities") or None
+
+
 def format_coupon_label(coupon_names: list[str]) -> str:
     if not coupon_names:
         return "龙虾专属饮品券"
@@ -339,19 +361,58 @@ def format_store_status(store: dict[str, Any]) -> str:
 
 
 def build_store_feature_tags(store: dict[str, Any]) -> list[str]:
-    feature_tags = {
-        label.get("name")
-        for label in store.get("labels", [])
-        if isinstance(label, dict) and label.get("name")
-    }
+    feature_tags: list[str] = []
 
-    if store.get("storeType") == 2:
-        feature_tags.add("Box 门店")
+    def append_tag(tag: Any) -> None:
+        if not tag:
+            return
+        text = str(tag).strip()
+        if text and text not in feature_tags:
+            feature_tags.append(text)
+
+    for facility in split_store_facilities(store):
+        append_tag(facility)
+
+    for label in store.get("labels", []):
+        if isinstance(label, dict):
+            append_tag(label.get("name"))
 
     if store.get("supportUnattendedMode") == 1:
-        feature_tags.add("支持无人模式")
+        append_tag("支持无人模式")
 
-    return [tag for tag in feature_tags if tag]
+    if store.get("storeType") == 2:
+        append_tag("Box 门店")
+
+    return feature_tags
+
+
+def build_store_summary_lines(stores: list[dict[str, Any]]) -> list[str]:
+    lines: list[str] = []
+    for store in stores[:2]:
+        feature_tags = build_store_feature_tags(store)
+        feature_text = "、".join(feature_tags) if feature_tags else "暂无特色信息"
+        wait_parts: list[str] = []
+        if store.get("makingCupCount") is not None:
+            wait_parts.append(f"制作中{store.get('makingCupCount')}杯")
+        if store.get("makingCupMinutes") is not None:
+            wait_parts.append(f"预计{store.get('makingCupMinutes')}分钟")
+        wait_text = "，".join(wait_parts) if wait_parts else "暂无排队信息"
+        contact = pick_store_contact(store) or "未提供联系电话"
+
+        lines.append(
+            "；".join(
+                [
+                    f"门店名：{store.get('name') or '-'}",
+                    f"地址：{store.get('address') or '-'}",
+                    f"电话：{contact}",
+                    f"设施：{render_store_facilities_text(store) or '未提供设施文案'}",
+                    f"特色：{feature_text}",
+                    f"排队：{wait_text}",
+                ]
+            )
+        )
+
+    return lines
 
 
 def render_stores_section(stores: list[dict[str, Any]]) -> str:
@@ -359,6 +420,8 @@ def render_stores_section(stores: list[dict[str, Any]]) -> str:
         [
             item.get("name"),
             item.get("address"),
+            pick_store_contact(item),
+            render_store_facilities_text(item),
             format_store_status(item),
             build_store_feature_tags(item),
             item.get("makingCupCount"),
@@ -369,9 +432,37 @@ def render_stores_section(stores: list[dict[str, Any]]) -> str:
 
     return render_markdown_table(
         title="门店列表",
-        headers=["门店名称", "地址", "状态", "特色标签", "制作中杯数", "制作时长(分钟)"],
+        headers=["门店名称", "地址", "联系电话", "设施文案", "状态", "特色标签", "制作中杯数", "制作时长(分钟)"],
         rows=rows,
         empty_text="暂无门店数据。",
+    )
+
+
+def render_answer_requirements_section(stores: list[dict[str, Any]]) -> str:
+    lines = [
+        "先给出推荐饮品，再补充门店信息，不要只概括成“有多家门店正在营业中”。",
+    ]
+
+    if stores:
+        lines.extend(
+            [
+                "若返回了门店数据，最终回答里至少给出 1-2 家具体门店，带上门店名和详细地址。",
+                "若有门店电话也一并给出；如果没有电话字段，再明确说明未提供联系电话。",
+                "若门店返回了 facilities，必须明确返回这段设施文案，不要省略。",
+            ]
+        )
+    else:
+        lines.append("如果没有门店数据，明确说明当前未拿到可用门店信息。")
+
+    return render_text_section("回答要求", lines)
+
+
+def render_store_summary_section(stores: list[dict[str, Any]]) -> str:
+    return render_text_section(
+        "门店摘要建议",
+        build_store_summary_lines(stores)
+        if stores
+        else ["当前未拿到可直接复述的门店摘要。"],
     )
 
 
@@ -389,6 +480,8 @@ def render_recommendation_context(
         render_orders_section(orders),
         render_goods_section(goods),
         render_stores_section(stores),
+        render_store_summary_section(stores),
+        render_answer_requirements_section(stores),
     ]
 
     recommendation_copy = build_recommendation_copy(goods, orders, weather)

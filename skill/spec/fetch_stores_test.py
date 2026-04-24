@@ -29,6 +29,8 @@ class FetchStoresScriptTest(unittest.TestCase):
         response = urlopen_mock.return_value.__enter__.return_value
         response.read.return_value = (
             '{"data":{"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号",'
+            '"facilities":"外摆区，休息区，宠物友好。",'
+            '"storeMobile":"010-12345678",'
             '"businessStatus":1,"operatingStatus":1,"realtimeState":1,'
             '"labels":[{"name":"休息区"}],"makingCupCount":4,"makingCupMinutes":18,'
             '"storeType":2,"supportUnattendedMode":1}]}}'
@@ -44,6 +46,9 @@ class FetchStoresScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("## 门店列表", output)
         self.assertIn("幂茶幂咖望京店", output)
+        self.assertIn("010-12345678", output)
+        self.assertIn("宠物友好", output)
+        self.assertIn("外摆区，休息区，宠物友好。", output)
         self.assertIn("休息区", output)
         self.assertIn("Box 门店", output)
         self.assertIn("支持无人模式", output)
