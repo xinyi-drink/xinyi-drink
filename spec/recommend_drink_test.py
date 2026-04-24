@@ -154,6 +154,90 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         )
         save_mobile_mock.assert_called_once_with("15712459595")
 
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_main_falls_back_to_generic_copy_when_weather_api_fails(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+    ) -> None:
+        fetch_json_mock.side_effect = [
+            {
+                "data": {
+                    "goods": [
+                        {
+                            "name": "葡萄毛尖轻咖",
+                            "categories": ["果咖"],
+                            "price": "16.80",
+                            "cupSizes": ["大杯"],
+                            "temperatures": ["热", "少冰"],
+                            "sugarLevels": ["3分糖"],
+                            "calories": "120 kcal",
+                            "ingredients": ["葡萄"],
+                        }
+                    ],
+                    "stores": [],
+                    "weather": {
+                        "city": "Beijing",
+                        "condition": "sunny",
+                        "temperatureC": 26,
+                    },
+                    "orders": {
+                        "orders": [
+                            {
+                                "createdAt": "2025-08-08 14:16:25",
+                                "orderSn": "20250808141625274275",
+                                "state": 6,
+                                "pickNo": "A001",
+                                "serverTime": "2025-08-08 14:36:25",
+                                "goodsNum": 1,
+                                "goods": [
+                                    {
+                                        "name": "葡萄毛尖轻咖",
+                                        "spec": "大杯",
+                                        "attr": "热 / 3分糖",
+                                    }
+                                ],
+                                "store": {"name": "幂茶幂咖望京店"},
+                            }
+                        ]
+                    },
+                }
+            },
+            RuntimeError("weather api down"),
+        ]
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "recommend_drink.py",
+                "--mobile",
+                "15712459595",
+            ],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("哇我们的老朋友，今天建议您喝葡萄毛尖轻咖", output)
+        self.assertNotIn("今天天气", output)
+        save_mobile_mock.assert_called_once_with("15712459595")
+
 
 if __name__ == "__main__":
     unittest.main()

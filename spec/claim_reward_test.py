@@ -135,7 +135,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("领取结果：未找到登录用户", output)
         self.assertIn("登录微信小程序【新一好喝】", output)
         self.assertIn("告知小程序绑定的手机号", output)
-        save_mobile_mock.assert_called_once_with("15712459595")
+        save_mobile_mock.assert_not_called()
 
     @patch.object(claim_reward, "save_mobile")
     @patch.object(
@@ -216,6 +216,114 @@ class ClaimRewardScriptTest(unittest.TestCase):
             output,
         )
         self.assertIn("今天天气有点热，建议您喝柚香燕麦拿铁", output)
+        save_mobile_mock.assert_called_once_with("15712459595")
+
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_claim_script_falls_back_to_generic_copy_when_weather_api_fails(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        first_response = urlopen_mock.return_value.__enter__.return_value
+        first_response.read.return_value = (
+            '{"code":200,"data":{"kind":"already_claimed","successCount":1,"failCount":0,'
+            '"items":[{"state":1,"message":"发放成功","coupon":{"name":"苦尽甘来拿铁"}}],'
+            '"user":{"mobile":"15712459595","nickname":"双龙"}}}'
+        ).encode("utf-8")
+        second_response = type("Resp", (), {})()
+        second_response.read = lambda: (
+            '{"data":{"goods":[{"name":"苦尽甘来拿铁","categories":["咖啡"],"price":"16.80","cupSizes":["大杯"],'
+            '"temperatures":["热","少冰"],"sugarLevels":["3分糖"],"calories":"120 kcal","ingredients":["牛奶"]}],'
+            '"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号","businessStatus":1,'
+            '"operatingStatus":1,"realtimeState":1,"labels":[{"name":"休息区"}],"makingCupCount":4,'
+            '"makingCupMinutes":18,"storeType":1,"supportUnattendedMode":0}],'
+            '"weather":{"city":"Beijing","condition":"sunny","temperatureC":27},'
+            '"orders":{"orders":[]}}}'
+        ).encode("utf-8")
+        second_context_manager = type(
+            "ContextManager",
+            (),
+            {
+                "__enter__": lambda self: second_response,
+                "__exit__": lambda self, exc_type, exc, tb: False,
+            },
+        )()
+        urlopen_mock.side_effect = [
+            urlopen_mock.return_value,
+            second_context_manager,
+            RuntimeError("weather api down"),
+        ]
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "15712459595"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("今天建议您喝苦尽甘来拿铁", output)
+        self.assertNotIn("今天天气", output)
+        save_mobile_mock.assert_called_once_with("15712459595")
+
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_claim_script_keeps_success_message_when_context_fetch_fails(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        first_response = urlopen_mock.return_value.__enter__.return_value
+        first_response.read.return_value = (
+            '{"code":200,"data":{"kind":"granted","successCount":1,"failCount":0,'
+            '"items":[{"state":1,"message":"发放成功","coupon":{"name":"苦尽甘来拿铁"}}],'
+            '"user":{"mobile":"15712459595","nickname":"双龙"}}}'
+        ).encode("utf-8")
+
+        urlopen_mock.side_effect = [
+            urlopen_mock.return_value,
+            RuntimeError("context api down"),
+        ]
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "15712459595"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("领取结果：已领取成功", output)
+        self.assertIn("您的龙虾专属饮品券「苦尽甘来拿铁」已发放", output)
+        self.assertNotIn("推荐您就近前往", output)
+        self.assertNotIn("建议您喝", output)
         save_mobile_mock.assert_called_once_with("15712459595")
 
 

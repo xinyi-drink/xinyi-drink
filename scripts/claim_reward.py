@@ -23,7 +23,11 @@ def fetch_json(url: str, timeout: int) -> dict:
 
 
 def fetch_weather(base_url: str, timeout: int) -> dict | None:
-    weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
+    try:
+        weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
+    except Exception:
+        return None
+
     weather_data = weather_response.get("data")
     return weather_data if isinstance(weather_data, dict) else None
 
@@ -49,18 +53,20 @@ def main() -> int:
         parsed = json.loads(payload)
         context_data = None
         if parsed.get("code") == 200:
-            save_mobile(args.mobile)
             claim_data = parsed.get("data", {})
             if claim_data.get("user"):
+                save_mobile(args.mobile)
                 base_url = config["apiBaseUrl"].rstrip("/")
-                context_response = fetch_json(
-                    f"{base_url}/skill/xinyi/context?mobile={args.mobile}",
-                    config["timeoutSeconds"],
-                )
-                context_data = context_response.get("data", {})
-                weather_data = fetch_weather(base_url, config["timeoutSeconds"])
-                if weather_data is not None:
+                try:
+                    context_response = fetch_json(
+                        f"{base_url}/skill/xinyi/context?mobile={args.mobile}",
+                        config["timeoutSeconds"],
+                    )
+                    context_data = context_response.get("data", {})
+                    weather_data = fetch_weather(base_url, config["timeoutSeconds"])
                     context_data["weather"] = weather_data
+                except Exception:
+                    context_data = None
         sys.stdout.write(render_claim_result(parsed.get("data", {}), context_data))
 
     return 0

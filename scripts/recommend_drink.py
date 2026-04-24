@@ -23,7 +23,11 @@ def fetch_json(url: str, timeout: int) -> dict:
 
 
 def fetch_weather(base_url: str, timeout: int) -> dict | None:
-    weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
+    try:
+        weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
+    except Exception:
+        return None
+
     weather_data = weather_response.get("data")
     return weather_data if isinstance(weather_data, dict) else None
 
@@ -74,7 +78,7 @@ def main() -> int:
         },
         goods=context_data.get("goods", []),
         stores=context_data.get("stores", []),
-        weather=weather_data or context_data.get("weather"),
+        weather=weather_data,
         orders=context_data.get("orders"),
     )
 

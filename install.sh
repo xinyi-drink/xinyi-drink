@@ -82,4 +82,16 @@ fi
 mkdir -p "$(dirname "$DEST")"
 rm -rf "$DEST"
 cp -R "$SCRIPT_DIR" "$DEST"
-echo "已安装 $SKILL_NAME 到 $DEST"
+find "$DEST" -type d -name '__pycache__' -prune -exec rm -rf {} +
+cat <<EOF
+已安装 $SKILL_NAME 到 $DEST
+
+安装完成后，你可以在新会话中这样使用：
+  /xinyi-drink 给我推荐一杯新一的咖啡
+
+如果当前平台支持自然触发，也可以直接问：
+  给我推荐一杯新一的咖啡
+
+如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！
+登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。
+EOF

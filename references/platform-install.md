@@ -24,8 +24,7 @@ bash skill/xinyi-drink/install.sh --platform codex
 bash skill/xinyi-drink/install.sh --platform universal
 ```
 
-安装完成后，优先直接自然提问，例如：
-可直接自然提问；具体示例优先参考 README。
+安装完成后，优先直接自然提问；具体示例参考 README。
 
 如果平台不支持自然触发，再退回显式命令式入口（若平台提供 slash skill 入口）。
 
@@ -35,8 +34,7 @@ bash skill/xinyi-drink/install.sh --platform universal
 git clone <repo-url> ~/.claude/skills/xinyi-drink
 ```
 
-使用时可以显式调用：
-具体示例优先参考 README。
+使用时可以显式调用；具体示例参考 README。
 
 ## Cursor
 
