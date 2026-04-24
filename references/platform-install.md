@@ -5,7 +5,7 @@
 默认使用通用技能目录：
 
 ```bash
-git clone <repo-url> ~/.agents/skills/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink
 ```
 
 如果使用安装脚本，以下平台名都已被明确支持，并统一映射到：
@@ -31,7 +31,7 @@ bash skill/xinyi-drink/install.sh --platform universal
 ## Claude Code
 
 ```bash
-git clone <repo-url> ~/.claude/skills/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink ~/.claude/skills/xinyi-drink
 ```
 
 使用时可以显式调用；具体示例参考 README。
@@ -39,7 +39,7 @@ git clone <repo-url> ~/.claude/skills/xinyi-drink
 ## Cursor
 
 ```bash
-git clone <repo-url> .cursor/rules/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink .cursor/rules/xinyi-drink
 ```
 
 如果 Cursor 当前环境支持自然触发，也可以直接提问；否则参考项目内规则加载方式使用。

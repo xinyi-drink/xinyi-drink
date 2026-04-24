@@ -21,19 +21,19 @@
 常见平台安装方式：
 
 ```bash
-git clone <repo-url> ~/.agents/skills/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink
 ```
 
 Claude Code：
 
 ```bash
-git clone <repo-url> ~/.claude/skills/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink ~/.claude/skills/xinyi-drink
 ```
 
 Cursor：
 
 ```bash
-git clone <repo-url> .cursor/rules/xinyi-drink
+git clone https://github.com/xinyi-drink/xinyi-drink .cursor/rules/xinyi-drink
 ```
 
 更完整的平台说明见 [平台安装说明](references/platform-install.md)。
