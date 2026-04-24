@@ -18,22 +18,23 @@
 
 ## 安装
 
-常见平台安装方式：
+当前已明确支持的常见平台与安装目录：
+
+| 平台 | 安装目录 | 安装命令 |
+| --- | --- | --- |
+| Claude Code | `~/.claude/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.claude/skills/xinyi-drink` |
+| Cursor | `.cursor/rules/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink .cursor/rules/xinyi-drink` |
+| Codex CLI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+| OpenClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+| Hermes | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+| QClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+| LobsterAI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+| WorkBuddy | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink` |
+
+如果你不确定自己属于哪一类平台，但本地使用的是 `~/.agents/skills/` 规范，也可以直接安装到：
 
 ```bash
 git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink
-```
-
-Claude Code：
-
-```bash
-git clone https://github.com/xinyi-drink/xinyi-drink ~/.claude/skills/xinyi-drink
-```
-
-Cursor：
-
-```bash
-git clone https://github.com/xinyi-drink/xinyi-drink .cursor/rules/xinyi-drink
 ```
 
 更完整的平台说明见 [平台安装说明](references/platform-install.md)。

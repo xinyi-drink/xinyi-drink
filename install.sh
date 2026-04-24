@@ -23,15 +23,15 @@ while [ $# -gt 0 ]; do
   ./install.sh [--platform 平台] [--dry-run]
 
 支持的平台：
-  claude-code
-  cursor
-  universal
-  codex
-  openclaw
-  hermes
-  qclaw
-  lobsterai
-  workbuddy
+  claude-code   -> ~/.claude/skills/
+  cursor        -> .cursor/rules/
+  codex         -> ~/.agents/skills/
+  openclaw      -> ~/.agents/skills/
+  hermes        -> ~/.agents/skills/
+  qclaw         -> ~/.agents/skills/
+  lobsterai     -> ~/.agents/skills/
+  workbuddy     -> ~/.agents/skills/
+  universal     -> ~/.agents/skills/
 
 说明：
   - openclaw / hermes / qclaw / lobsterai / workbuddy / codex 统一安装到 ~/.agents/skills/

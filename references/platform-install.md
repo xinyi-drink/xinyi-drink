@@ -1,18 +1,29 @@
 # 平台安装说明
 
-## OpenClaw / Hermes / QClaw / LobsterAI / WorkBuddy / Codex / 通用兼容平台
+## 使用 `~/.agents/skills/` 的平台
 
-默认使用通用技能目录：
+以下平台都明确安装到同一个目录：
+
+- Codex CLI
+- OpenClaw
+- Hermes
+- QClaw
+- LobsterAI
+- WorkBuddy
+
+统一安装目录：
+
+```bash
+~/.agents/skills/xinyi-drink
+```
+
+直接安装命令：
 
 ```bash
 git clone https://github.com/xinyi-drink/xinyi-drink ~/.agents/skills/xinyi-drink
 ```
 
-如果使用安装脚本，以下平台名都已被明确支持，并统一映射到：
-
-```bash
-~/.agents/skills/xinyi-drink
-```
+如果使用安装脚本，以下平台参数都已明确支持，并且都会安装到上面的同一目录：
 
 ```bash
 bash skill/xinyi-drink/install.sh --platform openclaw
@@ -46,10 +57,10 @@ git clone https://github.com/xinyi-drink/xinyi-drink .cursor/rules/xinyi-drink
 
 ## 其他平台说明
 
-- 如果平台本身支持 `SKILL.md` 标准，但没有独立文档，优先尝试通用目录：
+- 如果平台本身兼容 `SKILL.md`，但不在上面的明确支持列表中，优先尝试这个目录：
 
 ```bash
 ~/.agents/skills/xinyi-drink
 ```
 
-- 如果平台要求项目级安装，再根据各自平台规则改到对应目录
+- 如果平台要求项目级安装，再按该平台自己的技能目录规则调整
