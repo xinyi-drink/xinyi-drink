@@ -7,9 +7,9 @@ description: >-
 license: MIT
 metadata:
   author: Xinyi
-  version: 1.0.2
+  version: 1.0.4
   created: 2026-04-23
-  last_reviewed: 2026-04-23
+  last_reviewed: 2026-04-25
   review_interval_days: 90
 provenance:
   maintainer: Xinyi
