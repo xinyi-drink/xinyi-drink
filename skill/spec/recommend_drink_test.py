@@ -43,76 +43,67 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 }
             },
         )[1]
-        fetch_json_mock.side_effect = [
-            {
-                "data": {
-                    "goods": [
-                        {
-                            "name": "杨枝甘露|轻乳版",
-                            "categories": ["果咖", "轻负担"],
-                            "price": "16.80",
-                            "cupSizes": ["大杯"],
-                            "temperatures": ["少冰", "去冰"],
-                            "sugarLevels": ["3分糖", "5分糖"],
-                            "calories": "120\nkcal",
-                            "ingredients": ["芒果", "西柚"],
-                        }
-                    ],
-                    "stores": [
-                        {
-                            "name": "幂茶幂咖|望京店",
-                            "address": "北京市朝阳区望京街9号\n商业楼1层",
-                            "facilities": "外摆区，休息区，宠物友好。",
-                            "storeMobile": "010-12345678",
-                            "businessStatus": 1,
-                            "labels": [{"name": "休息区"}],
-                            "lat": "39.990326",
-                            "lng": "116.483659",
-                            "operatingStatus": 1,
-                            "realtimeState": 1,
-                            "makingCupCount": 4,
-                            "makingCupMinutes": 18,
-                            "storeType": 2,
-                            "supportUnattendedMode": 1,
-                        }
-                    ],
-                    "weather": {
-                        "city": "Beijing",
-                        "condition": "rainy",
-                        "temperatureC": 8,
-                    },
-                    "orders": {
-                        "orders": [
-                            {
-                                "createdAt": "2025-08-08 14:16:25",
-                                "orderSn": "20250808141625274275",
-                                "state": 2,
-                                "pickNo": "Z108",
-                                "serverTime": "2025-08-08 14:36:25",
-                                "goodsNum": 1,
-                                "goods": [
-                                    {
-                                        "name": "葡萄毛尖轻咖",
-                                        "spec": "中杯",
-                                        "attr": "正常冰|7分糖",
-                                    }
-                                ],
-                                "store": {
-                                    "name": "幂茶幂咖望京小街店",
-                                },
-                            }
-                        ]
-                    },
-                }
-            },
-            {
-                "data": {
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [
+                    {
+                        "name": "杨枝甘露|轻乳版",
+                        "categories": ["果咖", "轻负担"],
+                        "price": "16.80",
+                        "cupSizes": ["大杯"],
+                        "temperatures": ["少冰", "去冰"],
+                        "sugarLevels": ["3分糖", "5分糖"],
+                        "calories": "120\nkcal",
+                        "ingredients": ["芒果", "西柚"],
+                    }
+                ],
+                "stores": [
+                    {
+                        "name": "幂茶幂咖|望京店",
+                        "address": "北京市朝阳区望京街9号\n商业楼1层",
+                        "facilities": "外摆区，休息区，宠物友好。",
+                        "storeMobile": "010-12345678",
+                        "businessStatus": 1,
+                        "labels": [{"name": "休息区"}],
+                        "lat": "39.990326",
+                        "lng": "116.483659",
+                        "operatingStatus": 1,
+                        "realtimeState": 1,
+                        "makingCupCount": 4,
+                        "makingCupMinutes": 18,
+                        "storeType": 2,
+                        "supportUnattendedMode": 1,
+                    }
+                ],
+                "weather": {
                     "city": "Beijing",
                     "condition": "sunny",
                     "temperatureC": 26,
-                }
-            },
-        ]
+                },
+                "orders": {
+                    "orders": [
+                        {
+                            "createdAt": "2025-08-08 14:16:25",
+                            "orderSn": "20250808141625274275",
+                            "state": 2,
+                            "pickNo": "Z108",
+                            "serverTime": "2025-08-08 14:36:25",
+                            "goodsNum": 1,
+                            "goods": [
+                                {
+                                    "name": "葡萄毛尖轻咖",
+                                    "spec": "中杯",
+                                    "attr": "正常冰|7分糖",
+                                }
+                            ],
+                            "store": {
+                                "name": "幂茶幂咖望京小街店",
+                            },
+                        }
+                    ]
+                },
+            }
+        }
 
         stdout = io.StringIO()
 
@@ -163,7 +154,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("门店名：幂茶幂咖|望京店", output)
         self.assertIn("设施：外摆区，休息区，宠物友好。", output)
         self.assertIn("特色：外摆区、休息区、宠物友好、支持无人模式、Box 门店", output)
-        self.assertEqual(fetch_json_mock.call_count, 2)
+        self.assertEqual(fetch_json_mock.call_count, 1)
         self.assertEqual(post_json_mock.call_count, 1)
         self.assertEqual(
             post_json_mock.call_args_list[0].args,
@@ -181,13 +172,6 @@ class RecommendDrinkScriptTest(unittest.TestCase):
             fetch_json_mock.call_args_list[0].args,
             (
                 "http://127.0.0.1:8020/skill/xinyi/context?mobile=15712459595",
-                5,
-            ),
-        )
-        self.assertEqual(
-            fetch_json_mock.call_args_list[1].args,
-            (
-                "http://127.0.0.1:8020/skill/xinyi/weather",
                 5,
             ),
         )
@@ -219,51 +203,44 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 "user": {"mobile": "15712459595", "nickname": "双龙"},
             }
         }
-        fetch_json_mock.side_effect = [
-            {
-                "data": {
-                    "goods": [
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [
+                    {
+                        "name": "葡萄毛尖轻咖",
+                        "categories": ["果咖"],
+                        "price": "16.80",
+                        "cupSizes": ["大杯"],
+                        "temperatures": ["热", "少冰"],
+                        "sugarLevels": ["3分糖"],
+                        "calories": "120 kcal",
+                        "ingredients": ["葡萄"],
+                    }
+                ],
+                "stores": [],
+                "weather": None,
+                "orders": {
+                    "orders": [
                         {
-                            "name": "葡萄毛尖轻咖",
-                            "categories": ["果咖"],
-                            "price": "16.80",
-                            "cupSizes": ["大杯"],
-                            "temperatures": ["热", "少冰"],
-                            "sugarLevels": ["3分糖"],
-                            "calories": "120 kcal",
-                            "ingredients": ["葡萄"],
+                            "createdAt": "2025-08-08 14:16:25",
+                            "orderSn": "20250808141625274275",
+                            "state": 6,
+                            "pickNo": "A001",
+                            "serverTime": "2025-08-08 14:36:25",
+                            "goodsNum": 1,
+                            "goods": [
+                                {
+                                    "name": "葡萄毛尖轻咖",
+                                    "spec": "大杯",
+                                    "attr": "热 / 3分糖",
+                                }
+                            ],
+                            "store": {"name": "幂茶幂咖望京店"},
                         }
-                    ],
-                    "stores": [],
-                    "weather": {
-                        "city": "Beijing",
-                        "condition": "sunny",
-                        "temperatureC": 26,
-                    },
-                    "orders": {
-                        "orders": [
-                            {
-                                "createdAt": "2025-08-08 14:16:25",
-                                "orderSn": "20250808141625274275",
-                                "state": 6,
-                                "pickNo": "A001",
-                                "serverTime": "2025-08-08 14:36:25",
-                                "goodsNum": 1,
-                                "goods": [
-                                    {
-                                        "name": "葡萄毛尖轻咖",
-                                        "spec": "大杯",
-                                        "attr": "热 / 3分糖",
-                                    }
-                                ],
-                                "store": {"name": "幂茶幂咖望京店"},
-                            }
-                        ]
-                    },
-                }
-            },
-            RuntimeError("weather api down"),
-        ]
+                    ]
+                },
+            }
+        }
 
         stdout = io.StringIO()
 
@@ -312,10 +289,14 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 "user": {"mobile": "15712459595", "nickname": "双龙"},
             }
         }
-        fetch_json_mock.side_effect = [
-            {"data": {"goods": [], "stores": [], "orders": None}},
-            {"data": {"city": "Beijing", "condition": "sunny", "temperatureC": 26}},
-        ]
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [],
+                "stores": [],
+                "weather": {"city": "Beijing", "condition": "sunny", "temperatureC": 26},
+                "orders": None,
+            }
+        }
 
         stdout = io.StringIO()
         stderr = io.StringIO()
@@ -331,7 +312,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("DEBUG recommend_drink: resolved mobile from local state", stderr.getvalue())
         self.assertIn("DEBUG recommend_drink: posting claim request to http://127.0.0.1:8020/skill/xinyi/claim", stderr.getvalue())
         self.assertIn("DEBUG recommend_drink: fetching context from http://127.0.0.1:8020/skill/xinyi/context?mobile=15712459595", stderr.getvalue())
-        self.assertIn("DEBUG recommend_drink: fetching weather from http://127.0.0.1:8020/skill/xinyi/weather", stderr.getvalue())
+        self.assertIn("DEBUG recommend_drink: context includes weather data", stderr.getvalue())
         self.assertIn("## 用户上下文", stdout.getvalue())
         save_mobile_mock.assert_not_called()
 
@@ -361,10 +342,9 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 "user": None,
             }
         }
-        fetch_json_mock.side_effect = [
-            {"data": {"goods": [], "stores": [], "orders": None}},
-            {"data": {"city": "Beijing", "condition": "sunny", "temperatureC": 26}},
-        ]
+        fetch_json_mock.return_value = {
+            "data": {"goods": [], "stores": [], "weather": None, "orders": None}
+        }
 
         stdout = io.StringIO()
 

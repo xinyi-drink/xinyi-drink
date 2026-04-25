@@ -4,8 +4,7 @@
 
 1. 参与活动并领取奖励
 2. 查询门店与商品基础信息
-3. 查询天气
-4. 基于商品、门店、天气和可选订单历史做饮品推荐
+3. 基于商品、门店、天气和可选订单历史做饮品推荐
 
 ## 仓库与发布目录
 
@@ -17,7 +16,7 @@
 
 - 推荐能力走 `/skill/xinyi/context` 聚合上下文接口。
 - 服务端接口返回结构化原始数据；Skill 脚本会再整理成文本/表格给大模型使用。
-- 天气接口默认查询北京，也支持按地点查询任意城市或地区。
+- 推荐时统一走 `/skill/xinyi/context`，由 `context` 自动返回天气信息。
 - 用户在参与活动或个性化推荐时输入过手机号后，会默认保存在本地状态文件中复用。
 - 当用户尚未注册或未命中活动用户时，应先引导其登录微信小程序【新一好喝】，并告知小程序绑定的手机号。
 - 领取成功或已参与活动时，脚本会自动补充统一的活动提示、到店门店信息和推荐饮品文案。
@@ -67,14 +66,13 @@ bash install.sh --platform universal
 新一在北京有哪些门店
 给我推荐一杯新一的咖啡
 我想喝饮料，推荐一杯
-上海今天天气怎么样
 ```
 
 ## 脚本
 
 - `skill/scripts/claim_reward.py`: 调用活动接口；成功或已参与时会补充门店信息和推荐饮品文案
 - `skill/scripts/fetch_stores.py`: 调用门店接口，并输出门店表格
-- `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
+- `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口自动返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
 
 ## 接口
 
@@ -82,8 +80,6 @@ bash install.sh --platform universal
 - 门店：`/skill/xinyi/stores`
 - 商品：`/skill/xinyi/goods`
 - 订单：`/skill/xinyi/orders`
-- 天气：`/skill/xinyi/weather`
-  不传 `location` 默认查询北京；也支持 `?location=上海`、`?location=东京`
 - 聚合上下文：`/skill/xinyi/context`
 
 ## 本地状态

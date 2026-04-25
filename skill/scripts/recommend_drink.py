@@ -38,16 +38,6 @@ def post_json(url: str, timeout: int, payload: dict) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
-def fetch_weather(base_url: str, timeout: int) -> dict | None:
-    try:
-        weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
-    except Exception:
-        return None
-
-    weather_data = weather_response.get("data")
-    return weather_data if isinstance(weather_data, dict) else None
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="获取聚合推荐上下文，并整理成可直接提供给大模型的文本/表格"
@@ -111,11 +101,10 @@ def main() -> int:
     context_response = fetch_json(context_url, timeout)
     context_data = context_response.get("data", {})
 
-    debug_log(args.debug, f"fetching weather from {base_url}/skill/xinyi/weather")
-    weather_data = fetch_weather(base_url, timeout)
+    weather_data = context_data.get("weather")
     debug_log(
         args.debug,
-        "weather api returned data" if weather_data is not None else "weather api unavailable; using generic recommendation copy",
+        "context includes weather data" if weather_data is not None else "context missing weather; using generic recommendation copy",
     )
 
     rendered_context = render_recommendation_context(

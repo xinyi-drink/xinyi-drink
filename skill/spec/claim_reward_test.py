@@ -55,22 +55,9 @@ class ClaimRewardScriptTest(unittest.TestCase):
                 "__exit__": lambda self, exc_type, exc, tb: False,
             },
         )()
-        third_response = type("Resp", (), {})()
-        third_response.read = lambda: (
-            '{"data":{"city":"Beijing","condition":"cloudy","temperatureC":16}}'
-        ).encode("utf-8")
-        third_context_manager = type(
-            "ContextManager",
-            (),
-            {
-                "__enter__": lambda self: third_response,
-                "__exit__": lambda self, exc_type, exc, tb: False,
-            },
-        )()
         urlopen_mock.side_effect = [
             urlopen_mock.return_value,
             second_context_manager,
-            third_context_manager,
         ]
 
         stdout = io.StringIO()
@@ -177,22 +164,9 @@ class ClaimRewardScriptTest(unittest.TestCase):
                 "__exit__": lambda self, exc_type, exc, tb: False,
             },
         )()
-        third_response = type("Resp", (), {})()
-        third_response.read = lambda: (
-            '{"data":{"city":"Beijing","condition":"sunny","temperatureC":27}}'
-        ).encode("utf-8")
-        third_context_manager = type(
-            "ContextManager",
-            (),
-            {
-                "__enter__": lambda self: third_response,
-                "__exit__": lambda self, exc_type, exc, tb: False,
-            },
-        )()
         urlopen_mock.side_effect = [
             urlopen_mock.return_value,
             second_context_manager,
-            third_context_manager,
         ]
 
         stdout = io.StringIO()
@@ -247,7 +221,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
             '"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号","businessStatus":1,'
             '"operatingStatus":1,"realtimeState":1,"labels":[{"name":"休息区"}],"makingCupCount":4,'
             '"makingCupMinutes":18,"storeType":1,"supportUnattendedMode":0}],'
-            '"weather":{"city":"Beijing","condition":"sunny","temperatureC":27},'
+            '"weather":null,'
             '"orders":{"orders":[]}}}'
         ).encode("utf-8")
         second_context_manager = type(
@@ -258,11 +232,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
                 "__exit__": lambda self, exc_type, exc, tb: False,
             },
         )()
-        urlopen_mock.side_effect = [
-            urlopen_mock.return_value,
-            second_context_manager,
-            RuntimeError("weather api down"),
-        ]
+        urlopen_mock.side_effect = [urlopen_mock.return_value, second_context_manager]
 
         stdout = io.StringIO()
 

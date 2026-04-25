@@ -27,16 +27,6 @@ def fetch_json(url: str, timeout: int) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
-def fetch_weather(base_url: str, timeout: int) -> dict | None:
-    try:
-        weather_response = fetch_json(f"{base_url}/skill/xinyi/weather", timeout)
-    except Exception:
-        return None
-
-    weather_data = weather_response.get("data")
-    return weather_data if isinstance(weather_data, dict) else None
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="按手机号参与新一好喝活动并领取奖励")
     parser.add_argument("--mobile", required=True, help="用户手机号")
@@ -72,12 +62,9 @@ def main() -> int:
                         config["timeoutSeconds"],
                     )
                     context_data = context_response.get("data", {})
-                    debug_log(args.debug, f"fetching weather from {base_url}/skill/xinyi/weather")
-                    weather_data = fetch_weather(base_url, config["timeoutSeconds"])
-                    context_data["weather"] = weather_data
                     debug_log(
                         args.debug,
-                        "weather api returned data" if weather_data is not None else "weather api unavailable; using generic recommendation copy",
+                        "context includes weather data" if context_data.get("weather") is not None else "context missing weather; using generic recommendation copy",
                     )
                 except Exception:
                     debug_log(args.debug, "context enrichment failed; keep primary success message only")
