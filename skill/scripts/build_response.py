@@ -225,7 +225,59 @@ def choose_recommendation_good(
     return goods[0]
 
 
-def build_recommendation_copy(
+def build_recommendation_reason_signals(
+    recommended_good: dict[str, Any],
+    orders: dict[str, Any] | None,
+    weather: dict[str, Any] | None,
+) -> list[str]:
+    signals: list[str] = []
+    recommended_name = recommended_good.get("name")
+    order_goods_names = [
+        order_good.get("name")
+        for order in (orders or {}).get("orders", [])
+        for order_good in order.get("goods", [])
+        if order_good.get("name")
+    ]
+
+    if recommended_name and order_goods_names:
+        matched_history = [
+            name
+            for name in order_goods_names
+            if name == recommended_name or recommended_name in name or name in recommended_name
+        ]
+        if matched_history:
+            signals.append(f"历史订单里出现过：{'、'.join(matched_history[:3])}")
+        else:
+            signals.append(f"用户有历史订单，可参考近期喝过：{'、'.join(order_goods_names[:3])}")
+
+    weather_feel = describe_weather_feel(weather)
+    if weather_feel:
+        signals.append(f"当前天气体感：{weather_feel}")
+
+    temperatures = recommended_good.get("temperatures") or []
+    if temperatures:
+        signals.append(f"可选温度：{'、'.join(str(item) for item in temperatures)}")
+
+    sugar_levels = recommended_good.get("sugarLevels") or []
+    if sugar_levels:
+        signals.append(f"可选糖度：{'、'.join(str(item) for item in sugar_levels)}")
+
+    calories = recommended_good.get("calories")
+    if calories:
+        signals.append(f"热量信息：{calories}")
+
+    ingredients = recommended_good.get("ingredients") or []
+    if ingredients:
+        signals.append(f"主要配料：{'、'.join(str(item) for item in ingredients)}")
+
+    categories = recommended_good.get("categories") or []
+    if categories:
+        signals.append(f"商品分类：{'、'.join(str(item) for item in categories)}")
+
+    return signals
+
+
+def build_recommendation_fallback_copy(
     goods: list[dict[str, Any]],
     orders: dict[str, Any] | None,
     weather: dict[str, Any] | None,
@@ -249,6 +301,35 @@ def build_recommendation_copy(
     if has_history:
         return f"哇我们的老朋友，今天建议您喝{recommended_name}。"
     return f"今天建议您喝{recommended_name}。"
+
+
+def build_recommendation_material_lines(
+    goods: list[dict[str, Any]],
+    orders: dict[str, Any] | None,
+    weather: dict[str, Any] | None,
+) -> list[str]:
+    recommended_good = choose_recommendation_good(goods, orders, weather)
+    if not recommended_good:
+        return []
+
+    recommended_name = recommended_good.get("name")
+    if not recommended_name:
+        return []
+
+    lines = [
+        f"推荐候选饮品：{recommended_name}",
+        "主推荐文案由大模型根据下方素材自行生成，不要照搬固定模板。",
+        "推荐理由请显式展开 2-4 条，只使用已提供的历史订单、天气、商品属性和门店信息，不要编造未返回的数据。",
+    ]
+    reason_signals = build_recommendation_reason_signals(
+        recommended_good,
+        orders,
+        weather,
+    )
+    if reason_signals:
+        lines.append(f"可用推荐依据：{'；'.join(reason_signals)}。")
+
+    return lines
 
 
 def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
@@ -440,7 +521,8 @@ def render_stores_section(stores: list[dict[str, Any]]) -> str:
 
 def render_answer_requirements_section(stores: list[dict[str, Any]]) -> str:
     lines = [
-        "先给出推荐饮品，再补充门店信息，不要只概括成“有多家门店正在营业中”。",
+        "先给出一段自然的主推荐文案，再用“推荐理由”显式展开依据，最后补充门店信息。",
+        "主推荐文案需要由你基于历史订单、天气、商品属性、用户问题和场景自行组织，不要复述固定模板。",
     ]
 
     if stores:
@@ -484,12 +566,12 @@ def render_recommendation_context(
         render_answer_requirements_section(stores),
     ]
 
-    recommendation_copy = build_recommendation_copy(goods, orders, weather)
-    if recommendation_copy:
+    recommendation_material_lines = build_recommendation_material_lines(goods, orders, weather)
+    if recommendation_material_lines:
         sections.append(
             render_text_section(
-                "推荐话术建议",
-                [recommendation_copy],
+                "推荐素材",
+                recommendation_material_lines,
             )
         )
 
@@ -524,7 +606,7 @@ def render_claim_result(
     stores = context_data.get("stores", [])
     weather = context_data.get("weather")
     orders = context_data.get("orders")
-    recommendation_copy = build_recommendation_copy(goods, orders, weather)
+    recommendation_copy = build_recommendation_fallback_copy(goods, orders, weather)
 
     title = "领取结果：处理完成"
     lines: list[str] = []
