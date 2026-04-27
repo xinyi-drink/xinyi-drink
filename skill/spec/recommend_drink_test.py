@@ -9,6 +9,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import recommend_drink
+from skill_http import SkillHttpError
 
 
 class RecommendDrinkScriptTest(unittest.TestCase):
@@ -412,6 +413,96 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(recommend_drink, "post_json")
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_main_encodes_mobile_query_parameter(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "unregistered",
+                "user": None,
+            }
+        }
+        fetch_json_mock.return_value = {
+            "data": {"goods": [], "stores": [], "weather": None, "orders": None}
+        }
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--mobile", "15712&x=1"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            fetch_json_mock.call_args_list[0].args,
+            (
+                "http://127.0.0.1:8020/skill/xinyi/context?mobile=15712%26x%3D1",
+                5,
+            ),
+        )
+        save_mobile_mock.assert_called_once_with("15712&x=1")
+
+    @patch.object(recommend_drink, "post_json")
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_main_outputs_readable_error_when_context_request_fails(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "already_claimed",
+                "user": {"mobile": "15712459595"},
+            }
+        }
+        fetch_json_mock.side_effect = SkillHttpError("接口返回 HTTP 500")
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--mobile", "15712459595"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("获取推荐上下文失败：接口返回 HTTP 500", stdout.getvalue())
+        save_mobile_mock.assert_called_once_with("15712459595")
 
     @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")

@@ -85,6 +85,28 @@ class FetchStoresScriptTest(unittest.TestCase):
         self.assertIn("DEBUG fetch_stores: fetching stores from http://127.0.0.1:8020/skill/xinyi/stores", stderr.getvalue())
         self.assertIn("## 门店列表", stdout.getvalue())
 
+    @patch.object(
+        fetch_stores,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen", side_effect=OSError("connection refused"))
+    def test_fetch_stores_outputs_readable_error_when_request_fails(
+        self,
+        _urlopen_mock,
+        _load_config_mock,
+    ) -> None:
+        stdout = io.StringIO()
+
+        with patch("sys.stdout", stdout):
+            exit_code = fetch_stores.main()
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("门店查询失败：网络请求失败", stdout.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -79,6 +79,7 @@ bash install.sh --platform universal
 - `skill/scripts/recommendation_logic.py`: 选择推荐候选饮品，组织推荐依据和兜底推荐文案
 - `skill/scripts/response_rendering.py`: 输出 Markdown 表格和基础文本结构
 - `skill/scripts/skill_config.py`: 读取默认配置并应用环境变量覆盖
+- `skill/scripts/skill_http.py`: 统一 JSON 请求、URL query 编码、调试日志和可读网络错误
 
 ## 接口
 

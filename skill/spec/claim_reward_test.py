@@ -149,6 +149,51 @@ class ClaimRewardScriptTest(unittest.TestCase):
         },
     )
     @patch("urllib.request.urlopen")
+    def test_claim_script_does_not_duplicate_coupon_label_when_coupon_name_missing(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        first_response = urlopen_mock.return_value.__enter__.return_value
+        first_response.read.return_value = (
+            '{"code":200,"data":{"kind":"granted","successCount":1,"failCount":0,'
+            '"items":[{"state":1,"message":"发放成功","coupon":{}}],'
+            '"user":{"mobile":"15712459595","nickname":"双龙"}}}'
+        ).encode("utf-8")
+        urlopen_mock.side_effect = [
+            urlopen_mock.return_value,
+            RuntimeError("context api down"),
+        ]
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "15712459595"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("您的龙虾专属饮品券已发放", output)
+        self.assertNotIn("龙虾专属饮品券龙虾专属饮品券", output)
+        save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
+        self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
     def test_claim_script_reuses_recommendation_copy_when_activity_already_joined(
         self,
         urlopen_mock,

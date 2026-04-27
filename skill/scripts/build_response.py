@@ -64,7 +64,7 @@ def render_store_facilities_text(store: dict[str, Any]) -> Any:
 
 def format_coupon_label(coupon_names: list[str]) -> str:
     if not coupon_names:
-        return "龙虾专属饮品券"
+        return ""
 
     if len(coupon_names) == 1:
         return f"「{coupon_names[0]}」"

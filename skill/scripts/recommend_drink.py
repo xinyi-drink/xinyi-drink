@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import urllib.request
 
 from build_response import render_recommendation_context
 from skill_config import load_config
+from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
 from user_state import (
     clear_mobile,
     load_activity_joined,
@@ -18,26 +17,7 @@ from user_state import (
 )
 
 
-def debug_log(enabled: bool, message: str) -> None:
-    if enabled:
-        print(f"DEBUG recommend_drink: {message}", file=sys.stderr)
-
-
-def fetch_json(url: str, timeout: int) -> dict:
-    request = urllib.request.Request(url, method="GET")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def post_json(url: str, timeout: int, payload: dict) -> dict:
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+debug_log = make_debug_logger("recommend_drink")
 
 
 def main() -> int:
@@ -78,7 +58,7 @@ def main() -> int:
 
     mobile_for_context = resolved_mobile
     if resolved_mobile:
-        claim_url = f"{base_url}/skill/xinyi/claim"
+        claim_url = build_url(base_url, "/skill/xinyi/claim")
         debug_log(args.debug, f"posting claim request to {claim_url}")
         try:
             claim_response = post_json(
@@ -106,13 +86,17 @@ def main() -> int:
                     "claim did not match user; keep saved mobile and continue with context lookup",
                 )
 
-    query_suffix = ""
-    if mobile_for_context:
-        query_suffix = f"?mobile={mobile_for_context}"
-
-    context_url = f"{base_url}/skill/xinyi/context{query_suffix}"
+    context_url = build_url(
+        base_url,
+        "/skill/xinyi/context",
+        {"mobile": mobile_for_context},
+    )
     debug_log(args.debug, f"fetching context from {context_url}")
-    context_response = fetch_json(context_url, timeout)
+    try:
+        context_response = fetch_json(context_url, timeout)
+    except SkillHttpError as exc:
+        sys.stdout.write(f"获取推荐上下文失败：{exc}")
+        return 1
     context_data = context_response.get("data", {})
 
     weather_data = context_data.get("weather")

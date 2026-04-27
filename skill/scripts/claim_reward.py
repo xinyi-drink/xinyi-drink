@@ -2,24 +2,15 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import urllib.request
 
 from build_response import render_claim_result
 from skill_config import load_config
+from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
 from user_state import mark_activity_joined, mark_activity_not_joined, save_mobile
 
 
-def debug_log(enabled: bool, message: str) -> None:
-    if enabled:
-        print(f"DEBUG claim_reward: {message}", file=sys.stderr)
-
-
-def fetch_json(url: str, timeout: int) -> dict:
-    request = urllib.request.Request(url, method="GET")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+debug_log = make_debug_logger("claim_reward")
 
 
 def main() -> int:
@@ -29,49 +20,49 @@ def main() -> int:
     args = parser.parse_args()
 
     config = load_config()
-    url = f"{config['apiBaseUrl'].rstrip('/')}/skill/xinyi/claim"
+    base_url = config["apiBaseUrl"].rstrip("/")
+    url = build_url(base_url, "/skill/xinyi/claim")
     debug_log(args.debug, f"posting claim request to {url}")
     save_mobile(args.mobile)
-    payload = json.dumps({"mobile": args.mobile}).encode("utf-8")
 
-    request = urllib.request.Request(
-      url,
-      data=payload,
-      headers={"Content-Type": "application/json"},
-      method="POST",
-    )
+    try:
+        parsed = post_json(url, config["timeoutSeconds"], {"mobile": args.mobile})
+    except SkillHttpError as exc:
+        sys.stdout.write(f"领取活动失败：{exc}")
+        return 1
 
-    with urllib.request.urlopen(request, timeout=config["timeoutSeconds"]) as response:
-        payload = response.read().decode("utf-8")
-        parsed = json.loads(payload)
-        context_data = None
-        if parsed.get("code") == 200:
-            claim_data = parsed.get("data", {})
-            if claim_data.get("user"):
-                debug_log(args.debug, "user matched; saving mobile")
-                if claim_data.get("kind") in {"granted", "already_claimed"}:
-                    mark_activity_joined(args.mobile)
-                else:
-                    mark_activity_not_joined(args.mobile)
-                base_url = config["apiBaseUrl"].rstrip("/")
-                try:
-                    debug_log(args.debug, f"fetching context from {base_url}/skill/xinyi/context?mobile={args.mobile}")
-                    context_response = fetch_json(
-                        f"{base_url}/skill/xinyi/context?mobile={args.mobile}",
-                        config["timeoutSeconds"],
-                    )
-                    context_data = context_response.get("data", {})
-                    debug_log(
-                        args.debug,
-                        "context includes weather data" if context_data.get("weather") is not None else "context missing weather; using generic recommendation copy",
-                    )
-                except Exception:
-                    debug_log(args.debug, "context enrichment failed; keep primary success message only")
-                    context_data = None
+    context_data = None
+    if parsed.get("code") == 200:
+        claim_data = parsed.get("data", {})
+        if claim_data.get("user"):
+            debug_log(args.debug, "user matched; saving mobile")
+            if claim_data.get("kind") in {"granted", "already_claimed"}:
+                mark_activity_joined(args.mobile)
             else:
                 mark_activity_not_joined(args.mobile)
-                debug_log(args.debug, "user not found; marking activity as not joined")
-        sys.stdout.write(render_claim_result(parsed.get("data", {}), context_data))
+            context_url = build_url(
+                base_url,
+                "/skill/xinyi/context",
+                {"mobile": args.mobile},
+            )
+            try:
+                debug_log(args.debug, f"fetching context from {context_url}")
+                context_response = fetch_json(
+                    context_url,
+                    config["timeoutSeconds"],
+                )
+                context_data = context_response.get("data", {})
+                debug_log(
+                    args.debug,
+                    "context includes weather data" if context_data.get("weather") is not None else "context missing weather; using generic recommendation copy",
+                )
+            except SkillHttpError:
+                debug_log(args.debug, "context enrichment failed; keep primary success message only")
+                context_data = None
+        else:
+            mark_activity_not_joined(args.mobile)
+            debug_log(args.debug, "user not found; marking activity as not joined")
+    sys.stdout.write(render_claim_result(parsed.get("data", {}), context_data))
 
     return 0
 
