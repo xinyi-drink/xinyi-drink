@@ -97,6 +97,9 @@ bash install.sh --platform universal
 ## 参考资料
 
 - [能力地图](skill/references/capability-map.md)
+- [意图路由](skill/references/intent-routing.md)
+- [活动流程](skill/references/activity-flow.md)
+- [回答规范](skill/references/response-guidelines.md)
 - [注意事项](skill/references/gotchas.md)
 - [隐私边界](skill/references/privacy-boundaries.md)
 - [平台安装说明](skill/references/platform-install.md)
