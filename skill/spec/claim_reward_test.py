@@ -42,7 +42,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         first_response = urlopen_mock.return_value.__enter__.return_value
         first_response.read.return_value = (
             '{"code":200,"data":{"kind":"granted","successCount":1,"failCount":0,'
-            '"items":[{"state":1,"message":"发放成功","coupon":{"name":"苦尽甘来拿铁"}}],'
+            '"items":[{"state":1,"message":"发放成功","coupon":{"name":"（前100名）爆款苦尽甘来拿铁免费兑换券"}}],'
             '"user":{"mobile":"15712459595","nickname":"双龙"}}}'
         ).encode("utf-8")
         second_response = type("Resp", (), {})()
@@ -84,11 +84,14 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取结果：已领取成功", output)
-        self.assertIn("您的龙虾专属饮品券「苦尽甘来拿铁」已发放", output)
-        self.assertIn("龙虾专属标签和头像也已同步点亮，请登录小程序查看", output)
-        self.assertIn("龙虾专属贴纸已为您准备好，到店就能领取", output)
-        self.assertIn("先到先得，赶快哦", output)
+        self.assertIn("领取结果：身份验证成功", output)
+        self.assertIn("身份验证成功。三重福利发放到账", output)
+        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("「（前100名）爆款苦尽甘来拿铁免费兑换券」一张", output)
+        self.assertIn("微信小程序里「小龙虾身份标识」", output)
+        self.assertIn("你已经领取礼包，现在可以查看你过去的订单信息", output)
+        self.assertNotIn("你已完成", output)
+        self.assertNotIn("骨灰级粉丝", output)
         self.assertIn("贴纸领取门店信息我给你列全", output)
         self.assertIn(
             "**幂茶幂咖望京店**：地址：北京市朝阳区望京街9号；电话：01088888888；设施：休息区；排队：制作中4杯，预计18分钟",
@@ -134,13 +137,12 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取结果：未找到登录用户", output)
-        self.assertIn("本次查询手机号：15712459595", output)
-        self.assertIn("龙虾专属贴纸", output)
-        self.assertIn("龙虾专属饮品券", output)
-        self.assertIn("小程序龙虾专属头像属性", output)
-        self.assertIn("登录微信小程序【新一好喝】", output)
-        self.assertIn("告知小程序绑定的手机号", output)
+        self.assertIn("领取结果：请先登录小程序", output)
+        self.assertIn("目前还没登录过新一好喝", output)
+        self.assertIn("微信小程序搜索【新一咖啡】", output)
+        self.assertIn("登录后获取全部福利和功能", output)
+        self.assertNotIn("本次查询手机号：15712459595", output)
+        self.assertNotIn("告知小程序绑定的手机号", output)
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_called_once_with("15712459595")
@@ -179,12 +181,61 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取结果：已经领过", output)
-        self.assertIn("您已参与活动啦", output)
+        self.assertIn("领取结果：身份验证成功", output)
+        self.assertIn("身份验证成功。三重福利发放到账", output)
+        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("福利券一张（具体券名以小程序卡券为准）", output)
+        self.assertIn("微信小程序里「小龙虾身份标识」", output)
+        self.assertNotIn("您已参与活动啦", output)
+        self.assertNotIn("已经领过", output)
         self.assertNotIn("未找到登录用户", output)
         save_mobile_mock.assert_called_once_with("18210234223")
         self.mark_activity_joined_mock.assert_called_once_with("18210234223")
         self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_claim_script_explains_flow_when_no_reward_config(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        response = urlopen_mock.return_value.__enter__.return_value
+        response.read.return_value = (
+            '{"code":200,"data":{"kind":"no_reward_config","successCount":0,"failCount":0,'
+            '"items":[],"user":{"id":10956,"mobile":"13730663700","nickname":"用户_7144228"}}}'
+        ).encode("utf-8")
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "13730663700"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("领取方式", output)
+        self.assertIn("您可以通过绑定【新一好喝】的注册手机号，领取Skill用户大礼包", output)
+        self.assertIn("先绑定【新一好喝】注册手机号，再把手机号发来", output)
+        self.assertIn("微信小程序搜索【新一咖啡】", output)
+        self.assertNotIn("当前没有可领取的活动奖励", output)
+        self.assertNotIn("暂无可领取", output)
+        save_mobile_mock.assert_called_once_with("13730663700")
+        self.mark_activity_joined_mock.assert_not_called()
+        self.mark_activity_not_joined_mock.assert_called_once_with("13730663700")
 
     @patch.object(claim_reward, "load_activity_joined", return_value=False)
     @patch.object(claim_reward, "save_mobile")
@@ -222,11 +273,11 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取结果：礼品已到账", output)
-        self.assertIn("已经识别到你的账号，龙虾专属活动礼品已经获取成功", output)
-        self.assertIn("龙虾专属贴纸", output)
-        self.assertIn("龙虾专属饮品券", output)
-        self.assertIn("小程序龙虾专属头像属性", output)
+        self.assertIn("领取结果：身份验证成功", output)
+        self.assertIn("身份验证成功。三重福利发放到账", output)
+        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("福利券一张（具体券名以小程序卡券为准）", output)
+        self.assertIn("微信小程序里「小龙虾身份标识」", output)
         self.assertNotIn("已经领过", output)
         self.assertNotIn("您已参与活动啦", output)
         load_activity_joined_mock.assert_called_once_with("18539991423")
@@ -273,7 +324,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("您的龙虾专属饮品券已发放", output)
+        self.assertIn("福利券一张（具体券名以小程序卡券为准）", output)
         self.assertNotIn("龙虾专属饮品券龙虾专属饮品券", output)
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_called_once_with("15712459595")
@@ -336,10 +387,11 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("您已参与活动啦", output)
-        self.assertIn("龙虾专属标签和头像已经点亮，请登录小程序查看", output)
-        self.assertIn("龙虾专属贴纸已为您准备好，到店就能领取", output)
-        self.assertIn("先到先得，赶快哦", output)
+        self.assertIn("身份验证成功。三重福利发放到账", output)
+        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("「苦尽甘来拿铁」一张", output)
+        self.assertIn("微信小程序里「小龙虾身份标识」", output)
+        self.assertNotIn("您已参与活动啦", output)
         self.assertIn("贴纸领取门店信息我给你列全", output)
         self.assertIn(
             "**幂茶幂咖望京店**：地址：北京市朝阳区望京街9号；电话：未提供联系电话；设施：未提供设施文案；排队：制作中4杯，预计18分钟",
@@ -450,8 +502,9 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取结果：已领取成功", output)
-        self.assertIn("您的龙虾专属饮品券「苦尽甘来拿铁」已发放", output)
+        self.assertIn("领取结果：身份验证成功", output)
+        self.assertIn("身份验证成功。三重福利发放到账", output)
+        self.assertIn("「苦尽甘来拿铁」一张", output)
         self.assertNotIn("推荐您就近前往", output)
         self.assertNotIn("建议您喝", output)
         save_mobile_mock.assert_called_once_with("15712459595")
@@ -493,7 +546,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("DEBUG claim_reward: posting claim request to http://127.0.0.1:8020/skill/xinyi/claim", stderr.getvalue())
         self.assertIn("DEBUG claim_reward: user not found; marking activity as not joined", stderr.getvalue())
-        self.assertIn("领取结果：未找到登录用户", stdout.getvalue())
+        self.assertIn("领取结果：请先登录小程序", stdout.getvalue())
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_called_once_with("15712459595")

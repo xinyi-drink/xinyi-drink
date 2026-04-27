@@ -148,6 +148,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("## 商品列表", output)
         self.assertIn("## 门店列表", output)
         self.assertIn("## 订单历史", output)
+        self.assertNotIn("## 订单追问素材", output)
         self.assertIn("## 推荐素材", output)
         self.assertIn("## 回答要求", output)
         self.assertIn("## 门店摘要建议", output)
@@ -170,8 +171,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("不要使用“推荐理由”", output)
         self.assertIn("有人情味", output)
         self.assertIn("不要使用“根据你的历史订单偏好”", output)
-        self.assertIn("用户已参加过活动，不要再输出登录小程序", output)
-        self.assertNotIn("领取见面礼，并告知小程序绑定的手机号", output)
+        self.assertIn("用户已参加过活动，不要再输出主动留资文案", output)
+        self.assertNotIn("您可以通过绑定【新一好喝】的注册手机号", output)
         self.assertIn("推荐候选饮品：杨枝甘露|轻乳版", output)
         self.assertIn("挺舒服", output)
         self.assertIn("主要配料：芒果、西柚", output)
@@ -206,6 +207,85 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.mark_activity_joined_mock.assert_called_once_with("15712459595")
         self.mark_activity_not_joined_mock.assert_not_called()
         self.load_activity_joined_mock.assert_called_once_with("15712459595")
+
+    @patch.object(recommend_drink, "post_json")
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_order_followup_outputs_completed_count_materials(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "already_claimed",
+                "user": {"mobile": "15712459595", "nickname": "双龙"},
+            }
+        }
+        self.load_activity_joined_mock.return_value = True
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [],
+                "stores": [],
+                "weather": None,
+                "orders": {
+                    "orders": [
+                        {
+                            "createdAt": "2025-08-08 14:16:25",
+                            "orderSn": "20250808141625274275",
+                            "state": 6,
+                            "pickNo": "A001",
+                            "serverTime": "2025-08-08 14:36:25",
+                            "goodsNum": 1,
+                            "goods": [{"name": "苦尽甘来拿铁"}],
+                            "store": {"name": "幂茶幂咖望京店"},
+                        },
+                        {
+                            "createdAt": "2025-08-09 10:10:00",
+                            "orderSn": "20250809101000000001",
+                            "state": 2,
+                            "pickNo": "B002",
+                            "serverTime": "2025-08-09 10:30:00",
+                            "goodsNum": 1,
+                            "goods": [{"name": "花魁毛尖"}],
+                            "store": {"name": "幂茶幂咖望京店"},
+                        },
+                    ]
+                },
+            }
+        }
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--mobile", "15712459595", "--query", "我完成了几单"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("## 订单追问素材", output)
+        self.assertIn("你已完成1单，是新一的骨灰级粉丝吧", output)
+        self.assertIn("当前可见订单数：2单", output)
+        self.assertIn("买过的商品可以提这些：苦尽甘来拿铁、花魁毛尖", output)
+        self.assertIn("到过的门店可以提这些：幂茶幂咖望京店", output)
+        save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
 
     @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
@@ -267,11 +347,12 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("## 品牌活动", output)
-        self.assertIn("小龙虾专属见面礼", output)
-        self.assertIn("已经成功参与", output)
-        self.assertIn("龙虾专属贴纸", output)
-        self.assertIn("龙虾专属饮品券", output)
-        self.assertIn("小程序龙虾专属头像属性", output)
+        self.assertIn("Skill用户大礼包", output)
+        self.assertIn("用户身份已验证成功", output)
+        self.assertIn("三重福利包含", output)
+        self.assertIn("小龙虾贴纸", output)
+        self.assertIn("福利券", output)
+        self.assertIn("小龙虾身份标识", output)
         self.assertIn("用户正在问活动", output)
         self.assertIn("不能只列商品活动", output)
         self.assertIn("买一赠一福利", output)
@@ -364,12 +445,11 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("主推饮品名和门店名要加粗", output)
         self.assertIn("不要连续堆 emoji", output)
         self.assertIn("不要使用“推荐理由”", output)
-        self.assertIn("分割线 `---` 单独隔开留资提示", output)
-        self.assertIn("领取见面礼，并告知小程序绑定的手机号", output)
-        self.assertIn("龙虾专属贴纸", output)
-        self.assertIn("龙虾专属饮品券", output)
-        self.assertIn("小程序龙虾专属头像属性", output)
-        self.assertIn("不要把储值次卡作为见面礼权益", output)
+        self.assertIn("分割线 `---` 单独隔开主动留资文案", output)
+        self.assertIn("您可以通过绑定【新一好喝】的注册手机号", output)
+        self.assertIn("领取Skill用户大礼包", output)
+        self.assertIn("微信小程序搜索【新一咖啡】", output)
+        self.assertIn("登录后获取全部福利和功能", output)
         self.assertNotIn("今天天气", output)
         self.assertEqual(post_json_mock.call_count, 1)
         save_mobile_mock.assert_called_once_with("15712459595")

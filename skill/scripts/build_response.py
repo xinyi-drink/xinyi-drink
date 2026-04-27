@@ -32,13 +32,19 @@ ORDER_STATE_LABELS = {
     6: "已完成",
 }
 
-LOGIN_AND_SHARE_MOBILE_HINT = (
-    "登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。"
-)
-ACTIVITY_GIFT_ITEMS = ("龙虾专属贴纸", "龙虾专属饮品券", "小程序龙虾专属头像属性")
-ACTIVITY_GIFT_SUMMARY = f"见面礼包含：{'、'.join(ACTIVITY_GIFT_ITEMS)}。"
-STICKER_PICKUP_HINT = "龙虾专属贴纸已为您准备好，到店就能领取，先到先得，赶快哦。"
+LEAD_CAPTURE_COPY = "您可以通过绑定【新一好喝】的注册手机号，领取Skill用户大礼包。"
+UNREGISTERED_LOGIN_COPY = "目前还没登录过新一好喝，请到微信小程序搜索【新一咖啡】登录后获取全部福利和功能。"
+ACTIVITY_GIFT_SUMMARY = "三重福利包含：「小龙虾贴纸」一套、根据接口返回的福利券一张、微信小程序里「小龙虾身份标识」。"
 ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "优惠", "券", "见面礼", "龙虾", "领取")
+ORDER_QUERY_KEYWORDS = ("订单", "过去", "历史", "完成", "买过", "购买", "消费", "几单", "多少单", "下过单")
+
+
+def build_activity_flow_lines() -> list[str]:
+    return [
+        LEAD_CAPTURE_COPY,
+        "领取流程：先绑定【新一好喝】注册手机号，再把手机号发来，我会帮您领取。",
+        "如果还没登录过新一好喝，请到微信小程序搜索【新一咖啡】登录后获取全部福利和功能。",
+    ]
 
 
 def pick_store_contact(store: dict[str, Any]) -> Any:
@@ -71,6 +77,16 @@ def format_coupon_label(coupon_names: list[str]) -> str:
         return f"「{coupon_names[0]}」"
 
     return "、".join(f"「{name}」" for name in coupon_names)
+
+
+def format_coupon_reward(coupon_names: list[str]) -> str:
+    if not coupon_names:
+        return "福利券一张（具体券名以小程序卡券为准）"
+
+    if len(coupon_names) == 1:
+        return f"{format_coupon_label(coupon_names)}一张"
+
+    return f"{format_coupon_label(coupon_names)}各一张"
 
 
 def render_context_section(context: dict[str, Any]) -> str:
@@ -112,19 +128,26 @@ def is_activity_query(context: dict[str, Any]) -> bool:
     return any(keyword in text for keyword in ACTIVITY_QUERY_KEYWORDS)
 
 
+def is_order_query(context: dict[str, Any]) -> bool:
+    text = " ".join(
+        str(context.get(key) or "")
+        for key in ("query", "scene", "preference")
+    )
+    return any(keyword in text for keyword in ORDER_QUERY_KEYWORDS)
+
+
 def render_brand_activity_section(context: dict[str, Any]) -> str:
     activity_joined = context.get("activityJoined")
 
     if activity_joined is True:
         lines = [
-            f"**小龙虾专属见面礼**：用户已经成功参与，{ACTIVITY_GIFT_SUMMARY}",
-            "龙虾专属贴纸到店可领，龙虾专属饮品券和小程序龙虾专属头像属性已经生效。",
-            "回答时可以温和提醒“你已经领过啦”，不要再要求用户重新登录小程序或再次告知手机号。",
+            f"**Skill用户大礼包**：用户身份已验证成功，{ACTIVITY_GIFT_SUMMARY}",
+            "回答时可以说明福利已经到账，不要再要求用户重新登录小程序或再次告知手机号。",
         ]
     else:
         lines = [
-            f"**小龙虾专属见面礼**：登录微信小程序【新一好喝】完成注册和手机号绑定后，告知绑定手机号即可领取。{ACTIVITY_GIFT_SUMMARY}",
-            "龙虾专属贴纸到店可领，龙虾专属饮品券和小程序龙虾专属头像属性会随活动状态生效。",
+            f"**Skill用户大礼包**：{LEAD_CAPTURE_COPY}",
+            "用户可以提供【新一好喝】注册手机号领取；如果仍未注册，提醒去微信小程序搜索【新一咖啡】登录后获取全部福利和功能。",
         ]
 
     lines.append("这是品牌活动，必须和商品列表里的买一赠一、特价、畅饮卡等商品活动区分开。")
@@ -199,18 +222,11 @@ def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
 
 
 def build_activity_completion_lines(kind: str, coupon_names: list[str]) -> list[str]:
-    if kind == "granted":
+    if kind in {"granted", "already_claimed", "obtained_after_registration"}:
         return [
-            f"您的龙虾专属饮品券{format_coupon_label(coupon_names)}已发放。",
-            "龙虾专属标签和头像也已同步点亮，请登录小程序查看。",
-            STICKER_PICKUP_HINT,
-        ]
-
-    if kind == "already_claimed":
-        return [
-            "您已参与活动啦。",
-            "龙虾专属标签和头像已经点亮，请登录小程序查看。",
-            STICKER_PICKUP_HINT,
+            "身份验证成功。三重福利发放到账：",
+            f"「小龙虾贴纸」一套（到店展示小程序卡券领取）；{format_coupon_reward(coupon_names)}；微信小程序里「小龙虾身份标识」。",
+            "你已经领取礼包，现在可以查看你过去的订单信息。",
         ]
 
     return []
@@ -249,6 +265,45 @@ def render_orders_section(orders: dict[str, Any] | None) -> str:
         rows=rows,
         empty_text="暂无订单记录。",
     )
+
+
+def build_order_followup_lines(orders: dict[str, Any] | None) -> list[str]:
+    if orders is None:
+        return ["用户追问订单信息时，当前未提供手机号，不能查询过去订单。"]
+
+    order_list = orders.get("orders", [])
+    completed_orders = [order for order in order_list if order.get("state") == 6]
+    goods_names: list[str] = []
+    store_names: list[str] = []
+    for order in order_list:
+        store = order.get("store") or {}
+        if store.get("name"):
+            store_names.append(str(store.get("name")))
+        for good in order.get("goods", []):
+            if good.get("name"):
+                goods_names.append(str(good.get("name")))
+
+    lines = [
+        f"用户追问订单信息时再展开：你已完成{len(completed_orders)}单，是新一的骨灰级粉丝吧。",
+        f"当前可见订单数：{len(order_list)}单。",
+    ]
+    if goods_names:
+        lines.append(f"买过的商品可以提这些：{'、'.join(goods_names[:5])}。")
+    if store_names:
+        unique_store_names = list(dict.fromkeys(store_names))
+        lines.append(f"到过的门店可以提这些：{'、'.join(unique_store_names[:3])}。")
+
+    return lines
+
+
+def render_order_followup_section(
+    context: dict[str, Any],
+    orders: dict[str, Any] | None,
+) -> str:
+    if not is_order_query(context):
+        return ""
+
+    return render_text_section("订单追问素材", build_order_followup_lines(orders))
 
 
 def render_goods_section(goods: list[dict[str, Any]]) -> str:
@@ -374,18 +429,20 @@ def render_answer_requirements_section(
         "可以少量使用合适 emoji 做层次锚点或增强温度，比如饮品、天气、门店、活动各 0-1 个；不要每行都加，也不要连续堆 emoji。",
         "把推荐依据自然融进表达里，可以用轻量分点，但不要使用“根据你的历史订单偏好”“推荐理由”“历史偏好匹配”“天气适配”“推荐门店”这类机械标题。",
         "语气要真诚、松弛、有人情味；少用营销腔、感叹号和模板化开场，不要复述固定模板。",
+        "登录成功后只提示用户已经领取礼包、现在可以查看过去的订单信息；不要主动展开已完成多少单或购买明细。",
+        "只有用户追问订单、完成多少单、买过什么时，才根据订单数据返回已完成订单数和购买信息；可以自然说“你已完成xx单，是新一的骨灰级粉丝吧”。",
     ]
 
     if context.get("activityJoined"):
-        lines.append("用户已参加过活动，不要再输出登录小程序、领取见面礼、告知手机号这类留资提示。")
+        lines.append("用户已参加过活动，不要再输出主动留资文案；可说明身份验证成功，三重福利已经到账。")
     else:
         lines.append(
-            f"用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开留资提示：如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。必须说明{ACTIVITY_GIFT_SUMMARY}不要把储值次卡作为见面礼权益，除非接口或素材明确返回。"
+            f"用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开主动留资文案：{LEAD_CAPTURE_COPY} 用户提交手机号后如果仍未注册，再提示：{UNREGISTERED_LOGIN_COPY}"
         )
 
     if is_activity_query(context):
         lines.append(
-            "用户正在问活动/福利/优惠，最终回答必须把“**小龙虾专属见面礼**”作为独立品牌活动，和商品列表里的买一赠一、特价、畅饮卡等商品活动并列展示，不能只列商品活动。"
+            "用户正在问活动/福利/优惠，最终回答必须把“**Skill用户大礼包**”作为独立品牌活动，和商品列表里的买一赠一、特价、畅饮卡等商品活动并列展示，不能只列商品活动。"
         )
 
     if stores:
@@ -425,6 +482,7 @@ def render_recommendation_context(
         render_brand_activity_section(context),
         render_weather_section(weather),
         render_orders_section(orders),
+        render_order_followup_section(context, orders),
         render_goods_section(goods),
         render_stores_section(stores),
         render_store_summary_section(stores),
@@ -452,14 +510,10 @@ def render_claim_result(
     user = data.get("user")
 
     if kind == "unregistered":
-        requested_mobile = data.get("requestedMobile")
-        mobile_line = f"本次查询手机号：{requested_mobile}" if requested_mobile else ""
         return render_primary_response(
-            "领取结果：未找到登录用户",
+            "领取结果：请先登录小程序",
             [
-                mobile_line,
-                ACTIVITY_GIFT_SUMMARY,
-                f"请先{LOGIN_AND_SHARE_MOBILE_HINT}",
+                UNREGISTERED_LOGIN_COPY,
             ],
         )
 
@@ -481,24 +535,17 @@ def render_claim_result(
     lines: list[str] = []
 
     if kind == "granted":
-        title = "领取结果：已领取成功"
+        title = "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
     elif kind == "obtained_after_registration":
-        title = "领取结果：礼品已到账"
-        lines.extend(
-            [
-                "已经识别到你的账号，龙虾专属活动礼品已经获取成功。",
-                ACTIVITY_GIFT_SUMMARY,
-                "龙虾专属饮品券和小程序龙虾专属头像属性已经生效，请登录小程序查看。",
-                STICKER_PICKUP_HINT,
-            ]
-        )
+        title = "领取结果：身份验证成功"
+        lines.extend(build_activity_completion_lines(kind, coupon_names))
     elif kind == "already_claimed":
-        title = "领取结果：已经领过"
+        title = "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
     elif kind == "no_reward_config":
-        title = "领取结果：当前没有可领奖励"
-        lines.append("当前没有可领取的活动奖励。")
+        title = "领取方式"
+        lines.extend(build_activity_flow_lines())
     else:
         lines.append("活动处理已完成。")
 
