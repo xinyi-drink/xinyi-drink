@@ -34,7 +34,7 @@ ORDER_STATE_LABELS = {
 
 LEAD_CAPTURE_COPY = "您可以通过绑定【新一好喝】的注册手机号，领取Skill用户大礼包。"
 UNREGISTERED_LOGIN_COPY = "目前还没登录过新一好喝，请到微信小程序搜索【新一咖啡】登录后获取全部福利和功能。"
-ACTIVITY_GIFT_SUMMARY = "三重福利包含：「小龙虾贴纸」一套、根据接口返回的福利券一张、微信小程序里「小龙虾身份标识」。"
+ACTIVITY_GIFT_SUMMARY = "三重福利包含：「小龙虾贴纸」一套、根据接口返回的爆品赠饮一杯、微信小程序里「小龙虾身份标识」。"
 ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "优惠", "券", "见面礼", "龙虾", "领取")
 ORDER_QUERY_KEYWORDS = ("订单", "过去", "历史", "完成", "买过", "购买", "消费", "几单", "多少单", "下过单")
 
@@ -81,12 +81,12 @@ def format_coupon_label(coupon_names: list[str]) -> str:
 
 def format_coupon_reward(coupon_names: list[str]) -> str:
     if not coupon_names:
-        return "福利券一张（具体券名以小程序卡券为准）"
+        return "爆品赠饮一杯（具体饮品以小程序卡券为准）"
 
     if len(coupon_names) == 1:
-        return f"{format_coupon_label(coupon_names)}一张"
+        return f"{format_coupon_label(coupon_names)}一杯"
 
-    return f"{format_coupon_label(coupon_names)}各一张"
+    return f"{format_coupon_label(coupon_names)}各一杯"
 
 
 def render_context_section(context: dict[str, Any]) -> str:

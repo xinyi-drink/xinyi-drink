@@ -351,7 +351,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("用户身份已验证成功", output)
         self.assertIn("三重福利包含", output)
         self.assertIn("小龙虾贴纸", output)
-        self.assertIn("福利券", output)
+        self.assertIn("爆品赠饮", output)
         self.assertIn("小龙虾身份标识", output)
         self.assertIn("用户正在问活动", output)
         self.assertIn("不能只列商品活动", output)
