@@ -35,6 +35,8 @@ ORDER_STATE_LABELS = {
 LOGIN_AND_SHARE_MOBILE_HINT = (
     "登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。"
 )
+ACTIVITY_GIFT_ITEMS = ("龙虾专属贴纸", "龙虾专属饮品券", "小程序龙虾专属头像属性")
+ACTIVITY_GIFT_SUMMARY = f"见面礼包含：{'、'.join(ACTIVITY_GIFT_ITEMS)}。"
 STICKER_PICKUP_HINT = "龙虾专属贴纸已为您准备好，到店就能领取，先到先得，赶快哦。"
 
 
@@ -344,7 +346,7 @@ def render_answer_requirements_section(
         lines.append("用户已参加过活动，不要再输出登录小程序、领取见面礼、告知手机号这类留资提示。")
     else:
         lines.append(
-            "用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开留资提示：如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。"
+            f"用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开留资提示：如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。必须说明{ACTIVITY_GIFT_SUMMARY}不要把储值次卡作为见面礼权益，除非接口或素材明确返回。"
         )
 
     if stores:
@@ -413,6 +415,7 @@ def render_claim_result(
         return render_primary_response(
             "领取结果：未找到登录用户",
             [
+                ACTIVITY_GIFT_SUMMARY,
                 f"请先{LOGIN_AND_SHARE_MOBILE_HINT}",
             ],
         )

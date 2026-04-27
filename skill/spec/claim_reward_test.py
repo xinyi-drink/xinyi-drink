@@ -130,6 +130,9 @@ class ClaimRewardScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("领取结果：未找到登录用户", output)
+        self.assertIn("龙虾专属贴纸", output)
+        self.assertIn("龙虾专属饮品券", output)
+        self.assertIn("小程序龙虾专属头像属性", output)
         self.assertIn("登录微信小程序【新一好喝】", output)
         self.assertIn("告知小程序绑定的手机号", output)
         save_mobile_mock.assert_called_once_with("15712459595")
