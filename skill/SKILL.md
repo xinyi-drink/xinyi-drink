@@ -1,20 +1,47 @@
 ---
 name: xinyi-drink
-activation: /xinyi-drink
 description: >-
   新一好喝品牌导购与活动 Skill，用于领取活动奖励、查询门店/商品，并结合门店、天气和可选订单历史推荐饮品。
   当用户明确提到新一品牌，或当前上下文明显处于饮品选择、门店选择、活动参与场景时使用。
 license: MIT
 metadata:
   author: Xinyi
-  version: 1.0.12
+  version: 1.0.13
   created: 2026-04-23
   last_reviewed: 2026-04-27
   review_interval_days: 90
-provenance:
+  packageType: executable-skill
+  instructionOnly: false
   maintainer: Xinyi
-  source: local-repo
-  source_path: .
+  sourceRepository: https://github.com/xinyi-drink/xinyi-drink
+  defaultApiBaseUrl: https://ai.xinyicoffee.com/api
+  executableScripts:
+    - scripts/claim_reward.py
+    - scripts/fetch_stores.py
+    - scripts/recommend_drink.py
+  networkAccess:
+    required: true
+    endpoints:
+      - method: POST
+        path: /skill/xinyi/claim
+        sends: mobile
+      - method: GET
+        path: /skill/xinyi/context
+        sends: optional mobile query
+      - method: GET
+        path: /skill/xinyi/stores
+        sends: no personal data
+  localStorage:
+    defaultPath: ~/.xinyi-drink/state.json
+    contents: mobile, activityJoined, updatedAt
+    permissions: "0600 when supported"
+  environment:
+    - XINYI_API_BASE_URL
+    - XINYI_TIMEOUT_SECONDS
+    - XINYI_DRINK_STATE_FILE
+  openclaw:
+    dataClassification: optional-phone-number
+    privacyReviewed: 2026-04-27
 ---
 # /xinyi-drink — 新一好喝品牌导购与活动 Skill
 
@@ -76,6 +103,15 @@ provenance:
 - 推荐场景有门店数据时，最终回答至少给出 1-2 家具体门店；门店名、地址、电话和设施文案按返回内容完整表达。
 - 活动留资或未注册提示必须说明见面礼包含：龙虾专属贴纸、龙虾专属饮品券、小程序龙虾专属头像属性。
 - 不要把储值次卡作为见面礼权益，除非接口或素材明确返回。
+
+## OpenClaw 安全声明
+
+- 本 Skill 不是 instruction-only；它包含 Python 可执行脚本和 `install.sh`，用于查询门店、查询推荐上下文和提交活动领取请求。
+- 默认后端为 `https://ai.xinyicoffee.com/api`，由 `config/defaults.json` 声明；可用 `XINYI_API_BASE_URL` 覆盖到可信后端。
+- 网络请求只访问新一好喝业务接口：`/skill/xinyi/stores`、`/skill/xinyi/context`、`/skill/xinyi/claim`。
+- 手机号只在参与活动、查询活动状态或个性化推荐时使用；`/skill/xinyi/claim` 会以 JSON 提交手机号，`/skill/xinyi/context` 会在有手机号时用 query 传递手机号。
+- 本地只保存手机号活动状态，默认路径为 `~/.xinyi-drink/state.json`，内容为 `{mobile, activityJoined, updatedAt}`；可用 `XINYI_DRINK_STATE_FILE` 改到其他路径。
+- 不读取 shell history、浏览器 Cookie、系统凭据、SSH 密钥或无关文件；不请求 API key、token 或密码。
 
 ## 回答原则
 

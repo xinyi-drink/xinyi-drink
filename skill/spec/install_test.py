@@ -33,11 +33,10 @@ class InstallScriptTest(unittest.TestCase):
             self.assertFalse(any(installed_root.rglob("__pycache__")))
             self.assertIn("已安装 xinyi-drink 到", result.stdout)
             self.assertIn("/xinyi-drink 给我推荐一杯新一的咖啡", result.stdout)
-            self.assertIn(
-                "如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡",
-                result.stdout,
-            )
-            self.assertIn("告知小程序绑定的手机号", result.stdout)
+            self.assertIn("隐私提示", result.stdout)
+            self.assertIn("XINYI_API_BASE_URL", result.stdout)
+            self.assertIn("~/.xinyi-drink/state.json", result.stdout)
+            self.assertNotIn("告知小程序绑定的手机号", result.stdout)
 
     def test_install_script_maps_openclaw_to_openclaw_skills_dir(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]

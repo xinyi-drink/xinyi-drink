@@ -10,3 +10,5 @@
 - 天气是推荐时的增强输入，不是单独对外暴露的能力；如果 `context` 没返回天气，推荐文案会自动降级成普通句式。
 - 门店状态缓存只有 5 分钟，不保证秒级实时。
 - 生产默认 API 来自 `config/defaults.json`，本地调试可用 `XINYI_API_BASE_URL` 和 `XINYI_TIMEOUT_SECONDS` 临时覆盖。
+- 本 Skill 包含 Python 脚本和 `install.sh`，发布元数据不能标记为 instruction-only。
+- 使用真实手机号前，先确认默认后端 `https://ai.xinyicoffee.com/api` 或 `XINYI_API_BASE_URL` 指向可信服务。

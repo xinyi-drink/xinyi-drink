@@ -99,6 +99,7 @@ esac
 if $DRY_RUN; then
   echo "[DRY-RUN] 平台: $PLATFORM"
   echo "[DRY-RUN] 将安装 $SKILL_NAME 到: $DEST"
+  echo "[DRY-RUN] 不会发起网络请求，不会读取或写入手机号状态"
   exit 0
 fi
 
@@ -127,6 +128,9 @@ cat <<EOF
 如果当前平台支持自然触发，也可以直接问：
   给我推荐一杯新一的咖啡
 
-如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！
-登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。
+隐私提示：
+  - 参与活动或个性化推荐时，手机号会发送到配置的后端；默认后端见 config/defaults.json。
+  - 可通过 XINYI_API_BASE_URL 指向你信任的后端。
+  - 本地手机号状态默认保存到 ~/.xinyi-drink/state.json。
+  - 清空缓存可运行：python3 "$DEST/scripts/recommend_drink.py" --clear-mobile
 EOF

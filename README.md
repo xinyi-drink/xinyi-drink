@@ -15,6 +15,8 @@
 
 ## 当前事实
 
+- 这是包含可执行脚本的 Skill，不是 instruction-only 包；核心脚本在 `skill/scripts/`，安装脚本是 `skill/install.sh`。
+- 默认后端是 `https://ai.xinyicoffee.com/api`，来源见 `skill/config/defaults.json`。
 - 推荐能力走 `/skill/xinyi/context` 聚合上下文接口。
 - 服务端接口返回结构化原始数据；Skill 脚本会再整理成文本/表格给大模型使用。
 - 推荐时统一走 `/skill/xinyi/context`，由 `context` 自动返回天气信息。
@@ -22,7 +24,34 @@
 - 本地状态文件保存 `{mobile, activityJoined, updatedAt}`，并尽量设置为 `0600` 权限。
 - 当用户尚未注册或未命中活动用户时，应先引导其登录微信小程序【新一好喝】，并告知小程序绑定的手机号。
 - 领取成功或已参与活动时，脚本会自动补充统一的活动提示、到店门店信息和推荐饮品文案。
-- 本地调试可用 `XINYI_API_BASE_URL` 和 `XINYI_TIMEOUT_SECONDS` 临时覆盖默认 API 配置。
+- 本地调试可用 `XINYI_API_BASE_URL`、`XINYI_TIMEOUT_SECONDS` 和 `XINYI_DRINK_STATE_FILE` 临时覆盖默认配置。
+
+## OpenClaw 与隐私说明
+
+OpenClaw 安全扫描关注“是否会联网、是否处理个人数据、是否本地持久化”。本 Skill 的行为边界如下：
+
+| 类型 | 说明 |
+| --- | --- |
+| 包类型 | 包含 Python 脚本和 `install.sh`，不是 instruction-only |
+| 默认后端 | `https://ai.xinyicoffee.com/api` |
+| 本地状态 | 默认保存到 `~/.xinyi-drink/state.json`，内容为 `{mobile, activityJoined, updatedAt}` |
+| 可配置项 | `XINYI_API_BASE_URL`、`XINYI_TIMEOUT_SECONDS`、`XINYI_DRINK_STATE_FILE` |
+| 不会读取 | shell history、浏览器 Cookie、系统凭据、SSH 密钥或无关文件 |
+| 不需要 | API key、token、密码或其他账号凭据 |
+
+接口和手机号数据流：
+
+| 接口 | 方法 | 发送数据 | 用途 |
+| --- | --- | --- | --- |
+| `GET /skill/xinyi/stores` | GET | 不发送个人数据 | 查询门店 |
+| `GET /skill/xinyi/context` | GET | 有手机号时发送 `mobile` query | 获取商品、门店、天气、订单摘要和活动状态 |
+| `POST /skill/xinyi/claim` | POST | 手机号会作为请求数据发送到后端，JSON 形如 `{"mobile":"..."}` | 查询并领取活动奖励 |
+
+使用真实手机号前，应确认 `skill/config/defaults.json` 中的默认后端可信，或通过 `XINYI_API_BASE_URL` 指向你控制的后端。清空本地手机号缓存可运行：
+
+```bash
+python3 skill/scripts/recommend_drink.py --clear-mobile
+```
 
 ## 安装
 
@@ -83,11 +112,10 @@ bash install.sh --platform universal
 
 ## 接口
 
-- 活动：`/skill/xinyi/claim`
-- 门店：`/skill/xinyi/stores`
-- 商品：`/skill/xinyi/goods`
-- 订单：`/skill/xinyi/orders`
-- 聚合上下文：`/skill/xinyi/context`
+- 活动：`POST /skill/xinyi/claim`
+- 门店：`GET /skill/xinyi/stores`
+- 聚合上下文：`GET /skill/xinyi/context`
+- 默认后端：`https://ai.xinyicoffee.com/api`
 
 ## 本地状态
 
