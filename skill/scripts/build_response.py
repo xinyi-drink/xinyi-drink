@@ -483,6 +483,16 @@ def render_claim_result(
     if kind == "granted":
         title = "领取结果：已领取成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
+    elif kind == "obtained_after_registration":
+        title = "领取结果：礼品已到账"
+        lines.extend(
+            [
+                "已经识别到你的账号，龙虾专属活动礼品已经获取成功。",
+                ACTIVITY_GIFT_SUMMARY,
+                "龙虾专属饮品券和小程序龙虾专属头像属性已经生效，请登录小程序查看。",
+                STICKER_PICKUP_HINT,
+            ]
+        )
     elif kind == "already_claimed":
         title = "领取结果：已经领过"
         lines.extend(build_activity_completion_lines(kind, coupon_names))

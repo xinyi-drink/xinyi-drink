@@ -7,7 +7,7 @@ import sys
 from build_response import render_claim_result
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
-from user_state import mark_activity_joined, mark_activity_not_joined, save_mobile
+from user_state import load_activity_joined, mark_activity_joined, mark_activity_not_joined, save_mobile
 
 
 debug_log = make_debug_logger("claim_reward")
@@ -23,6 +23,7 @@ def main() -> int:
     base_url = config["apiBaseUrl"].rstrip("/")
     url = build_url(base_url, "/skill/xinyi/claim")
     debug_log(args.debug, f"posting claim request to {url}")
+    previous_activity_joined = load_activity_joined(args.mobile)
     save_mobile(args.mobile)
 
     try:
@@ -33,13 +34,15 @@ def main() -> int:
 
     if isinstance(parsed.get("data"), dict):
         parsed["data"].setdefault("requestedMobile", args.mobile)
+        if parsed["data"].get("kind") == "already_claimed" and previous_activity_joined is False:
+            parsed["data"]["kind"] = "obtained_after_registration"
 
     context_data = None
     if parsed.get("code") == 200:
         claim_data = parsed.get("data", {})
         if claim_data.get("user"):
             debug_log(args.debug, "user matched; saving mobile")
-            if claim_data.get("kind") in {"granted", "already_claimed"}:
+            if claim_data.get("kind") in {"granted", "already_claimed", "obtained_after_registration"}:
                 mark_activity_joined(args.mobile)
             else:
                 mark_activity_not_joined(args.mobile)

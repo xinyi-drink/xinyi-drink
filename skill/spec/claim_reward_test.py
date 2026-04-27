@@ -13,10 +13,13 @@ import claim_reward
 
 class ClaimRewardScriptTest(unittest.TestCase):
     def setUp(self) -> None:
+        self.load_activity_joined_patcher = patch.object(claim_reward, "load_activity_joined", return_value=None)
         self.mark_activity_joined_patcher = patch.object(claim_reward, "mark_activity_joined")
         self.mark_activity_not_joined_patcher = patch.object(claim_reward, "mark_activity_not_joined")
+        self.load_activity_joined_mock = self.load_activity_joined_patcher.start()
         self.mark_activity_joined_mock = self.mark_activity_joined_patcher.start()
         self.mark_activity_not_joined_mock = self.mark_activity_not_joined_patcher.start()
+        self.addCleanup(self.load_activity_joined_patcher.stop)
         self.addCleanup(self.mark_activity_joined_patcher.stop)
         self.addCleanup(self.mark_activity_not_joined_patcher.stop)
 
@@ -181,6 +184,54 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertNotIn("未找到登录用户", output)
         save_mobile_mock.assert_called_once_with("18210234223")
         self.mark_activity_joined_mock.assert_called_once_with("18210234223")
+        self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(claim_reward, "load_activity_joined", return_value=False)
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_claim_script_treats_already_claimed_after_unregistered_as_gift_obtained(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+        load_activity_joined_mock,
+    ) -> None:
+        response = urlopen_mock.return_value.__enter__.return_value
+        response.read.return_value = (
+            '{"code":200,"data":{"kind":"already_claimed","successCount":0,"failCount":0,'
+            '"items":[],"user":{"id":10956,"uniacid":1,"mobile":"18539991423","nickname":"用户_991423"}}}'
+        ).encode("utf-8")
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "18539991423"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("领取结果：礼品已到账", output)
+        self.assertIn("已经识别到你的账号，龙虾专属活动礼品已经获取成功", output)
+        self.assertIn("龙虾专属贴纸", output)
+        self.assertIn("龙虾专属饮品券", output)
+        self.assertIn("小程序龙虾专属头像属性", output)
+        self.assertNotIn("已经领过", output)
+        self.assertNotIn("您已参与活动啦", output)
+        load_activity_joined_mock.assert_called_once_with("18539991423")
+        save_mobile_mock.assert_called_once_with("18539991423")
+        self.mark_activity_joined_mock.assert_called_once_with("18539991423")
         self.mark_activity_not_joined_mock.assert_not_called()
 
     @patch.object(claim_reward, "save_mobile")
