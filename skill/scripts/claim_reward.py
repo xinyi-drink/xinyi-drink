@@ -31,6 +31,9 @@ def main() -> int:
         sys.stdout.write(f"领取活动失败：{exc}")
         return 1
 
+    if isinstance(parsed.get("data"), dict):
+        parsed["data"].setdefault("requestedMobile", args.mobile)
+
     context_data = None
     if parsed.get("code") == 200:
         claim_data = parsed.get("data", {})

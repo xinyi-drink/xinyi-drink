@@ -46,7 +46,8 @@ class ClaimRewardScriptTest(unittest.TestCase):
         second_response.read = lambda: (
             '{"data":{"goods":[{"name":"苦尽甘来拿铁","categories":["咖啡"],"price":"16.80","cupSizes":["大杯"],'
             '"temperatures":["热","少冰"],"sugarLevels":["3分糖"],"calories":"120 kcal","ingredients":["牛奶"]}],'
-            '"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号","businessStatus":1,'
+            '"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号","storeMobile":"01088888888",'
+            '"facilities":"休息区","businessStatus":1,'
             '"operatingStatus":1,"realtimeState":1,"labels":[{"name":"休息区"}],"makingCupCount":4,'
             '"makingCupMinutes":18,"storeType":2,"supportUnattendedMode":1}],'
             '"weather":{"city":"Beijing","condition":"cloudy","temperatureC":16},'
@@ -85,10 +86,12 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("龙虾专属标签和头像也已同步点亮，请登录小程序查看", output)
         self.assertIn("龙虾专属贴纸已为您准备好，到店就能领取", output)
         self.assertIn("先到先得，赶快哦", output)
-        self.assertIn(
-            "推荐您就近前往幂茶幂咖望京店（北京市朝阳区望京街9号）领取贴纸",
-            output,
-        )
+        self.assertIn("可以就近去下面门店领取贴纸", output)
+        self.assertIn("**幂茶幂咖望京店**", output)
+        self.assertIn("地址：北京市朝阳区望京街9号", output)
+        self.assertIn("电话：01088888888", output)
+        self.assertIn("设施：休息区", output)
+        self.assertIn("排队：制作中4杯，预计18分钟", output)
         self.assertIn("哇我们的老朋友，今天天气偏凉，建议您喝苦尽甘来拿铁", output)
         self.assertNotIn('"kind"', output)
         save_mobile_mock.assert_called_once_with("15712459595")
@@ -130,6 +133,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("领取结果：未找到登录用户", output)
+        self.assertIn("本次查询手机号：15712459595", output)
         self.assertIn("龙虾专属贴纸", output)
         self.assertIn("龙虾专属饮品券", output)
         self.assertIn("小程序龙虾专属头像属性", output)
@@ -138,6 +142,47 @@ class ClaimRewardScriptTest(unittest.TestCase):
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_called_once_with("15712459595")
+
+    @patch.object(claim_reward, "save_mobile")
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch("urllib.request.urlopen")
+    def test_claim_script_marks_joined_when_mobile_already_claimed(
+        self,
+        urlopen_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        response = urlopen_mock.return_value.__enter__.return_value
+        response.read.return_value = (
+            '{"code":200,"data":{"kind":"already_claimed","successCount":0,"failCount":0,'
+            '"items":[],"user":{"id":10956,"uniacid":1,"mobile":"18210234223","nickname":"用户_4749997"}}}'
+        ).encode("utf-8")
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "18210234223"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("领取结果：已经领过", output)
+        self.assertIn("您已参与活动啦", output)
+        self.assertNotIn("未找到登录用户", output)
+        save_mobile_mock.assert_called_once_with("18210234223")
+        self.mark_activity_joined_mock.assert_called_once_with("18210234223")
+        self.mark_activity_not_joined_mock.assert_not_called()
 
     @patch.object(claim_reward, "save_mobile")
     @patch.object(
@@ -245,10 +290,12 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("龙虾专属标签和头像已经点亮，请登录小程序查看", output)
         self.assertIn("龙虾专属贴纸已为您准备好，到店就能领取", output)
         self.assertIn("先到先得，赶快哦", output)
-        self.assertIn(
-            "推荐您就近前往幂茶幂咖望京店（北京市朝阳区望京街9号）领取贴纸",
-            output,
-        )
+        self.assertIn("可以就近去下面门店领取贴纸", output)
+        self.assertIn("**幂茶幂咖望京店**", output)
+        self.assertIn("地址：北京市朝阳区望京街9号", output)
+        self.assertIn("电话：未提供联系电话", output)
+        self.assertIn("设施：未提供设施文案", output)
+        self.assertIn("排队：制作中4杯，预计18分钟", output)
         self.assertIn("今天天气有点热，建议您喝柚香燕麦拿铁", output)
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_called_once_with("15712459595")

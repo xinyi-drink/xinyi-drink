@@ -147,21 +147,26 @@ def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
         return []
 
     highlighted_stores = stores[:2]
+    lines = ["可以就近去下面门店领取贴纸："]
 
-    if len(highlighted_stores) == 1:
-        store = highlighted_stores[0]
-        return [
-            f"推荐您就近前往{store.get('name') or '-'}（{store.get('address') or '-'}）领取贴纸。"
-        ]
+    for store in highlighted_stores:
+        wait_parts: list[str] = []
+        if store.get("makingCupCount") is not None:
+            wait_parts.append(f"制作中{store.get('makingCupCount')}杯")
+        if store.get("makingCupMinutes") is not None:
+            wait_parts.append(f"预计{store.get('makingCupMinutes')}分钟")
 
-    store_descriptions = [
-        f"{store.get('name') or '-'}（{store.get('address') or '-'}）"
-        for store in highlighted_stores
-    ]
+        lines.extend(
+            [
+                f"**{store.get('name') or '-'}**",
+                f"地址：{store.get('address') or '-'}",
+                f"电话：{pick_store_contact(store) or '未提供联系电话'}",
+                f"设施：{render_store_facilities_text(store) or '未提供设施文案'}",
+                f"排队：{'，'.join(wait_parts) if wait_parts else '暂无排队信息'}",
+            ]
+        )
 
-    return [
-        f"推荐您就近前往{'或'.join(store_descriptions)}领取贴纸。"
-    ]
+    return lines
 
 
 def build_activity_completion_lines(kind: str, coupon_names: list[str]) -> list[str]:
@@ -412,9 +417,12 @@ def render_claim_result(
     user = data.get("user")
 
     if kind == "unregistered":
+        requested_mobile = data.get("requestedMobile")
+        mobile_line = f"本次查询手机号：{requested_mobile}" if requested_mobile else ""
         return render_primary_response(
             "领取结果：未找到登录用户",
             [
+                mobile_line,
                 ACTIVITY_GIFT_SUMMARY,
                 f"请先{LOGIN_AND_SHARE_MOBILE_HINT}",
             ],

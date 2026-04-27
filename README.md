@@ -10,6 +10,7 @@
 ## 仓库与发布目录
 
 - 当前 GitHub 仓库根目录是 `xinyi-drink/`
+- 源码与发布来源：`https://github.com/xinyi-drink/xinyi-drink`
 - 实际对外发布与安装使用的 Skill 包根目录是 `xinyi-drink/skill/`
 - 因此仓库根目录下的文档、安装命令与文件路径，都应以 `skill/` 作为真实 Skill 根目录来理解
 
@@ -18,6 +19,7 @@
 - 这是包含可执行脚本的 Skill，不是 instruction-only 包；核心脚本在 `skill/scripts/`，安装脚本是 `skill/install.sh`。
 - 默认后端是 `https://ai.xinyicoffee.com/api`，来源见 `skill/config/defaults.json`。
 - 推荐能力走 `/skill/xinyi/context` 聚合上下文接口。
+- 商品基础信息目前由 `/skill/xinyi/context` 聚合返回，并由脚本整理给大模型使用。
 - 服务端接口返回结构化原始数据；Skill 脚本会再整理成文本/表格给大模型使用。
 - 推荐时统一走 `/skill/xinyi/context`，由 `context` 自动返回天气信息。
 - 用户在参与活动或个性化推荐时输入过手机号后，会默认保存在本地状态文件中复用。
@@ -62,7 +64,7 @@ python3 skill/scripts/recommend_drink.py --clear-mobile
 | Claude Code | `~/.claude/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform claude-code` |
 | Cursor | `.cursor/rules/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform cursor` |
 | Codex CLI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform codex` |
-| OpenClaw | `~/.openclaw/skills/xinyi-drink` | `npx clawhub@latest install xinyi-drink` |
+| OpenClaw | `~/.openclaw/skills/xinyi-drink` | `npx clawhub@latest install xinyi-drink` 或 `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform openclaw` |
 | Hermes | `~/.hermes/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform hermes` |
 | QClaw | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform qclaw` |
 | LobsterAI | `~/.agents/skills/xinyi-drink` | `git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform lobsterai` |
@@ -80,8 +82,9 @@ bash install.sh --platform universal
 
 补充说明：
 
-- OpenClaw 推荐直接使用 `npx clawhub@latest install xinyi-drink`，这样会安装到 `~/.openclaw/skills/`，并且 WebUI 可直接识别。
-- 如果你是从本仓库本地安装到 OpenClaw，也可以执行 `bash install.sh --platform openclaw`。
+- OpenClaw 有两种安装方式。
+- ClawHub 安装：`npx clawhub@latest install xinyi-drink`，会安装到 `~/.openclaw/skills/`，并且 WebUI 可直接识别。
+- Git 安装：`git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform openclaw`，适合本地审查源码后安装。
 
 ## 使用示例
 
@@ -115,6 +118,7 @@ bash install.sh --platform universal
 - 活动：`POST /skill/xinyi/claim`
 - 门店：`GET /skill/xinyi/stores`
 - 聚合上下文：`GET /skill/xinyi/context`
+- 商品与订单摘要：由 `GET /skill/xinyi/context` 聚合返回
 - 默认后端：`https://ai.xinyicoffee.com/api`
 
 ## 本地状态
