@@ -3,6 +3,17 @@ from __future__ import annotations
 
 from typing import Any
 
+from recommendation_logic import (
+    build_recommendation_fallback_copy,
+    build_recommendation_material_lines,
+)
+from response_rendering import (
+    escape_table_cell,
+    render_markdown_table,
+    render_primary_response,
+    render_text_section,
+)
+
 WEATHER_LABELS = {
     "sunny": "晴",
     "cloudy": "多云",
@@ -25,58 +36,6 @@ LOGIN_AND_SHARE_MOBILE_HINT = (
     "登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。"
 )
 STICKER_PICKUP_HINT = "龙虾专属贴纸已为您准备好，到店就能领取，先到先得，赶快哦。"
-
-
-def render_primary_response(title: str, lines: list[str]) -> str:
-    parts = [title.strip()]
-    parts.extend(line.strip() for line in lines if line and line.strip())
-    return "\n".join(parts)
-
-
-def escape_table_cell(value: Any) -> str:
-    if value is None:
-        return "-"
-
-    if isinstance(value, bool):
-        text = "是" if value else "否"
-    elif isinstance(value, (list, tuple, set)):
-        items = [escape_table_cell(item) for item in value]
-        text = "、".join(item for item in items if item != "-")
-    else:
-        text = str(value).strip()
-
-    if not text:
-        return "-"
-
-    return text.replace("|", "\\|").replace("\n", "<br>")
-
-
-def render_markdown_table(
-    title: str,
-    headers: list[str],
-    rows: list[list[Any]],
-    empty_text: str,
-) -> str:
-    parts = [f"## {title}"]
-
-    if not rows:
-        parts.append(empty_text)
-        return "\n".join(parts)
-
-    parts.append(f"| {' | '.join(headers)} |")
-    parts.append(f"| {' | '.join('---' for _ in headers)} |")
-
-    for row in rows:
-        parts.append(f"| {' | '.join(escape_table_cell(cell) for cell in row)} |")
-
-    return "\n".join(parts)
-
-
-def render_text_section(title: str, lines: list[str]) -> str:
-    return render_primary_response(
-        f"## {title}",
-        lines,
-    )
 
 
 def pick_store_contact(store: dict[str, Any]) -> Any:
@@ -117,9 +76,18 @@ def render_context_section(context: dict[str, Any]) -> str:
     if mobile:
         mobile_source = "本地缓存" if context.get("mobileFromStore") else "本次输入"
 
+    activity_joined = context.get("activityJoined")
+    if activity_joined is True:
+        activity_joined_label = "是"
+    elif activity_joined is False:
+        activity_joined_label = "否"
+    else:
+        activity_joined_label = "未确认"
+
     rows = [
         ["手机号", mobile],
         ["手机号来源", mobile_source],
+        ["是否已参加活动", activity_joined_label],
         ["用户问题", context.get("query")],
         ["推荐场景", context.get("scene")],
         ["用户偏好", context.get("preference")],
@@ -152,20 +120,6 @@ def render_weather_section(weather: dict[str, Any] | None) -> str:
     )
 
 
-def describe_weather_feel(weather: dict[str, Any] | None) -> str | None:
-    temperature = weather.get("temperatureC") if weather else None
-    if not isinstance(temperature, (int, float)):
-        return None
-
-    if temperature <= 10:
-        return "有点冷"
-    if temperature <= 18:
-        return "偏凉"
-    if temperature <= 26:
-        return "挺舒服"
-    return "有点热"
-
-
 def format_order_goods(goods: list[dict[str, Any]]) -> str:
     entries: list[str] = []
     for item in goods:
@@ -184,152 +138,6 @@ def format_order_state(state: Any) -> str:
         return ORDER_STATE_LABELS.get(state, f"状态{state}")
 
     return escape_table_cell(state)
-
-
-def choose_recommendation_good(
-    goods: list[dict[str, Any]],
-    orders: dict[str, Any] | None,
-    weather: dict[str, Any] | None,
-) -> dict[str, Any] | None:
-    if not goods:
-        return None
-
-    order_goods_names = [
-        order_good.get("name")
-        for order in (orders or {}).get("orders", [])
-        for order_good in order.get("goods", [])
-        if order_good.get("name")
-    ]
-
-    for ordered_name in order_goods_names:
-        for good in goods:
-            good_name = good.get("name")
-            if not good_name:
-                continue
-            if good_name == ordered_name or good_name in ordered_name or ordered_name in good_name:
-                return good
-
-    feel = describe_weather_feel(weather)
-    if feel in {"有点冷", "偏凉"}:
-        for good in goods:
-            temperatures = good.get("temperatures") or []
-            if any("热" in str(item) for item in temperatures):
-                return good
-
-    if feel == "有点热":
-        for good in goods:
-            temperatures = good.get("temperatures") or []
-            if any("冰" in str(item) for item in temperatures):
-                return good
-
-    return goods[0]
-
-
-def build_recommendation_reason_signals(
-    recommended_good: dict[str, Any],
-    orders: dict[str, Any] | None,
-    weather: dict[str, Any] | None,
-) -> list[str]:
-    signals: list[str] = []
-    recommended_name = recommended_good.get("name")
-    order_goods_names = [
-        order_good.get("name")
-        for order in (orders or {}).get("orders", [])
-        for order_good in order.get("goods", [])
-        if order_good.get("name")
-    ]
-
-    if recommended_name and order_goods_names:
-        matched_history = [
-            name
-            for name in order_goods_names
-            if name == recommended_name or recommended_name in name or name in recommended_name
-        ]
-        if matched_history:
-            signals.append(f"历史订单里出现过：{'、'.join(matched_history[:3])}")
-        else:
-            signals.append(f"用户有历史订单，可参考近期喝过：{'、'.join(order_goods_names[:3])}")
-
-    weather_feel = describe_weather_feel(weather)
-    if weather_feel:
-        signals.append(f"当前天气体感：{weather_feel}")
-
-    temperatures = recommended_good.get("temperatures") or []
-    if temperatures:
-        signals.append(f"可选温度：{'、'.join(str(item) for item in temperatures)}")
-
-    sugar_levels = recommended_good.get("sugarLevels") or []
-    if sugar_levels:
-        signals.append(f"可选糖度：{'、'.join(str(item) for item in sugar_levels)}")
-
-    calories = recommended_good.get("calories")
-    if calories:
-        signals.append(f"热量信息：{calories}")
-
-    ingredients = recommended_good.get("ingredients") or []
-    if ingredients:
-        signals.append(f"主要配料：{'、'.join(str(item) for item in ingredients)}")
-
-    categories = recommended_good.get("categories") or []
-    if categories:
-        signals.append(f"商品分类：{'、'.join(str(item) for item in categories)}")
-
-    return signals
-
-
-def build_recommendation_fallback_copy(
-    goods: list[dict[str, Any]],
-    orders: dict[str, Any] | None,
-    weather: dict[str, Any] | None,
-) -> str | None:
-    recommended_good = choose_recommendation_good(goods, orders, weather)
-    if not recommended_good:
-        return None
-
-    recommended_name = recommended_good.get("name")
-    if not recommended_name:
-        return None
-
-    weather_feel = describe_weather_feel(weather)
-    has_history = bool((orders or {}).get("orders"))
-
-    if weather_feel:
-        if has_history:
-            return f"哇我们的老朋友，今天天气{weather_feel}，建议您喝{recommended_name}。"
-        return f"今天天气{weather_feel}，建议您喝{recommended_name}。"
-
-    if has_history:
-        return f"哇我们的老朋友，今天建议您喝{recommended_name}。"
-    return f"今天建议您喝{recommended_name}。"
-
-
-def build_recommendation_material_lines(
-    goods: list[dict[str, Any]],
-    orders: dict[str, Any] | None,
-    weather: dict[str, Any] | None,
-) -> list[str]:
-    recommended_good = choose_recommendation_good(goods, orders, weather)
-    if not recommended_good:
-        return []
-
-    recommended_name = recommended_good.get("name")
-    if not recommended_name:
-        return []
-
-    lines = [
-        f"推荐候选饮品：{recommended_name}",
-        "主推荐文案由大模型根据下方素材自行生成，不要照搬固定模板。",
-        "推荐理由请显式展开 2-4 条，只使用已提供的历史订单、天气、商品属性和门店信息，不要编造未返回的数据。",
-    ]
-    reason_signals = build_recommendation_reason_signals(
-        recommended_good,
-        orders,
-        weather,
-    )
-    if reason_signals:
-        lines.append(f"可用推荐依据：{'；'.join(reason_signals)}。")
-
-    return lines
 
 
 def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
@@ -519,11 +327,21 @@ def render_stores_section(stores: list[dict[str, Any]]) -> str:
     )
 
 
-def render_answer_requirements_section(stores: list[dict[str, Any]]) -> str:
+def render_answer_requirements_section(
+    stores: list[dict[str, Any]],
+    context: dict[str, Any],
+) -> str:
     lines = [
         "先给出一段自然的主推荐文案，再用“推荐理由”显式展开依据，最后补充门店信息。",
         "主推荐文案需要由你基于历史订单、天气、商品属性、用户问题和场景自行组织，不要复述固定模板。",
     ]
+
+    if context.get("activityJoined"):
+        lines.append("用户已参加过活动，不要再输出登录小程序、领取见面礼、告知手机号这类留资提示。")
+    else:
+        lines.append(
+            "用户未参加过活动或当前手机号状态未确认，回答末尾可以提示：如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。"
+        )
 
     if stores:
         lines.extend(
@@ -563,7 +381,7 @@ def render_recommendation_context(
         render_goods_section(goods),
         render_stores_section(stores),
         render_store_summary_section(stores),
-        render_answer_requirements_section(stores),
+        render_answer_requirements_section(stores, context),
     ]
 
     recommendation_material_lines = build_recommendation_material_lines(goods, orders, weather)

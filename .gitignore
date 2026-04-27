@@ -1,3 +1,4 @@
 docs/local-github-ssh-setup.md
-scripts/
+/scripts/
 __pycache__/
+.DS_Store

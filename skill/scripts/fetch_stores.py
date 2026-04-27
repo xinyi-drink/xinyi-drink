@@ -4,19 +4,14 @@ from __future__ import annotations
 import json
 import sys
 import urllib.request
-from pathlib import Path
 
 from build_response import render_stores_section
+from skill_config import load_config
 
 
 def debug_log(enabled: bool, message: str) -> None:
     if enabled:
         print(f"DEBUG fetch_stores: {message}", file=sys.stderr)
-
-
-def load_config() -> dict:
-    config_path = Path(__file__).resolve().parents[1] / "config" / "defaults.json"
-    return json.loads(config_path.read_text())
 
 
 def main() -> int:

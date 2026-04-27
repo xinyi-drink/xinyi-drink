@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 import os
+from pathlib import Path
+
+
+STATE_FILE_MODE = 0o600
 
 
 def resolve_state_file() -> Path:
@@ -26,22 +29,65 @@ def load_state() -> dict:
         return {}
 
 
-def save_mobile(mobile: str) -> None:
+def write_state(payload: dict) -> None:
     state_file = resolve_state_file()
     state_file.parent.mkdir(parents=True, exist_ok=True)
-    payload = load_state()
-    payload["mobile"] = mobile
-    payload["updatedAt"] = datetime.now(timezone.utc).isoformat()
     state_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        os.chmod(state_file, STATE_FILE_MODE)
+    except OSError:
+        pass
+
+
+def save_mobile(mobile: str) -> None:
+    payload = {
+        "mobile": mobile,
+        "activityJoined": None,
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    write_state(payload)
+
+
+def save_activity_state(mobile: str, activity_joined: bool) -> None:
+    payload = {
+        "mobile": mobile,
+        "activityJoined": activity_joined,
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    write_state(payload)
+
+
+def mark_activity_joined(mobile: str) -> None:
+    save_activity_state(mobile, True)
+
+
+def mark_activity_not_joined(mobile: str) -> None:
+    save_activity_state(mobile, False)
+
+
+def load_activity_joined(mobile: str | None) -> bool | None:
+    if not mobile:
+        return None
+
+    payload = load_state()
+    if payload.get("mobile") != mobile:
+        return None
+
+    value = payload.get("activityJoined")
+    return value if isinstance(value, bool) else None
+
+
+def has_activity_joined(mobile: str | None) -> bool:
+    return load_activity_joined(mobile) is True
 
 
 def clear_mobile() -> None:
-    state_file = resolve_state_file()
-    payload = load_state()
-    payload.pop("mobile", None)
-    payload["updatedAt"] = datetime.now(timezone.utc).isoformat()
-    state_file.parent.mkdir(parents=True, exist_ok=True)
-    state_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    payload = {
+        "mobile": None,
+        "activityJoined": None,
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    write_state(payload)
 
 
 def load_mobile() -> str | None:

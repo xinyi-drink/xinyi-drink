@@ -10,6 +10,10 @@ DRY_RUN=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --platform)
+      if [ $# -lt 2 ]; then
+        echo "--platform 需要指定平台名称" >&2
+        exit 1
+      fi
       PLATFORM="$2"
       shift 2
       ;;
@@ -85,6 +89,13 @@ case "$PLATFORM" in
     ;;
 esac
 
+case "$DEST" in
+  ""|"/"|"$HOME"|"$HOME/")
+    echo "安装目标路径异常，已拒绝覆盖: $DEST" >&2
+    exit 3
+    ;;
+esac
+
 if $DRY_RUN; then
   echo "[DRY-RUN] 平台: $PLATFORM"
   echo "[DRY-RUN] 将安装 $SKILL_NAME 到: $DEST"
@@ -92,9 +103,21 @@ if $DRY_RUN; then
 fi
 
 mkdir -p "$(dirname "$DEST")"
-rm -rf "$DEST"
+if [ -e "$DEST" ]; then
+  BACKUP="$DEST.backup.$(date +%Y%m%d%H%M%S)"
+  if [ -e "$BACKUP" ]; then
+    BACKUP_INDEX=1
+    while [ -e "$BACKUP.$BACKUP_INDEX" ]; do
+      BACKUP_INDEX=$((BACKUP_INDEX + 1))
+    done
+    BACKUP="$BACKUP.$BACKUP_INDEX"
+  fi
+  mv "$DEST" "$BACKUP"
+  echo "已备份旧版本到 $BACKUP"
+fi
 cp -R "$SCRIPT_DIR" "$DEST"
 find "$DEST" -type d -name '__pycache__' -prune -exec rm -rf {} +
+find "$DEST" -name '.DS_Store' -delete
 cat <<EOF
 已安装 $SKILL_NAME 到 $DEST
 

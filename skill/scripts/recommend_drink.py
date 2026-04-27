@@ -5,20 +5,22 @@ import argparse
 import json
 import sys
 import urllib.request
-from pathlib import Path
 
 from build_response import render_recommendation_context
-from user_state import clear_mobile, load_mobile, save_mobile
+from skill_config import load_config
+from user_state import (
+    clear_mobile,
+    load_activity_joined,
+    load_mobile,
+    mark_activity_joined,
+    mark_activity_not_joined,
+    save_mobile,
+)
 
 
 def debug_log(enabled: bool, message: str) -> None:
     if enabled:
         print(f"DEBUG recommend_drink: {message}", file=sys.stderr)
-
-
-def load_config() -> dict:
-    config_path = Path(__file__).resolve().parents[1] / "config" / "defaults.json"
-    return json.loads(config_path.read_text())
 
 
 def fetch_json(url: str, timeout: int) -> dict:
@@ -78,19 +80,31 @@ def main() -> int:
     if resolved_mobile:
         claim_url = f"{base_url}/skill/xinyi/claim"
         debug_log(args.debug, f"posting claim request to {claim_url}")
-        claim_response = post_json(
-            claim_url,
-            timeout,
-            {"mobile": resolved_mobile},
-        )
-        claim_data = claim_response.get("data", {})
-        if claim_data.get("user"):
-            debug_log(args.debug, "claim matched user")
-        else:
+        try:
+            claim_response = post_json(
+                claim_url,
+                timeout,
+                {"mobile": resolved_mobile},
+            )
+        except Exception as exc:
             debug_log(
                 args.debug,
-                "claim did not match user; keep saved mobile and continue with context lookup",
+                f"claim lookup failed; continue with context lookup and cached activity state: {exc}",
             )
+        else:
+            claim_data = claim_response.get("data", {})
+            if claim_data.get("user"):
+                debug_log(args.debug, "claim matched user")
+                if claim_data.get("kind") in {"granted", "already_claimed"}:
+                    mark_activity_joined(resolved_mobile)
+                else:
+                    mark_activity_not_joined(resolved_mobile)
+            else:
+                mark_activity_not_joined(resolved_mobile)
+                debug_log(
+                    args.debug,
+                    "claim did not match user; keep saved mobile and continue with context lookup",
+                )
 
     query_suffix = ""
     if mobile_for_context:
@@ -114,6 +128,7 @@ def main() -> int:
             "preference": args.preference,
             "query": args.query,
             "scene": args.scene,
+            "activityJoined": load_activity_joined(mobile_for_context),
         },
         goods=context_data.get("goods", []),
         stores=context_data.get("stores", []),

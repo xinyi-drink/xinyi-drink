@@ -12,6 +12,21 @@ import recommend_drink
 
 
 class RecommendDrinkScriptTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.mark_activity_joined_patcher = patch.object(recommend_drink, "mark_activity_joined")
+        self.mark_activity_not_joined_patcher = patch.object(recommend_drink, "mark_activity_not_joined")
+        self.load_activity_joined_patcher = patch.object(
+            recommend_drink,
+            "load_activity_joined",
+            return_value=None,
+        )
+        self.mark_activity_joined_mock = self.mark_activity_joined_patcher.start()
+        self.mark_activity_not_joined_mock = self.mark_activity_not_joined_patcher.start()
+        self.load_activity_joined_mock = self.load_activity_joined_patcher.start()
+        self.addCleanup(self.mark_activity_joined_patcher.stop)
+        self.addCleanup(self.mark_activity_not_joined_patcher.stop)
+        self.addCleanup(self.load_activity_joined_patcher.stop)
+
     @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
     @patch.object(recommend_drink, "load_mobile", return_value=None)
@@ -43,6 +58,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 }
             },
         )[1]
+        self.load_activity_joined_mock.return_value = True
         fetch_json_mock.return_value = {
             "data": {
                 "goods": [
@@ -148,6 +164,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("制作中", output)
         self.assertIn("主推荐文案由大模型根据下方素材自行生成", output)
         self.assertIn("推荐理由请显式展开 2-4 条", output)
+        self.assertIn("用户已参加过活动，不要再输出登录小程序", output)
+        self.assertNotIn("领取见面礼，并告知小程序绑定的手机号", output)
         self.assertIn("推荐候选饮品：杨枝甘露|轻乳版", output)
         self.assertIn("挺舒服", output)
         self.assertIn("主要配料：芒果、西柚", output)
@@ -179,6 +197,9 @@ class RecommendDrinkScriptTest(unittest.TestCase):
             ),
         )
         save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
+        self.mark_activity_not_joined_mock.assert_not_called()
+        self.load_activity_joined_mock.assert_called_once_with("15712459595")
 
     @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
@@ -264,9 +285,12 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("推荐候选饮品：葡萄毛尖轻咖", output)
         self.assertIn("主推荐文案由大模型根据下方素材自行生成", output)
         self.assertIn("推荐理由请显式展开 2-4 条", output)
+        self.assertIn("领取见面礼，并告知小程序绑定的手机号", output)
         self.assertNotIn("今天天气", output)
         self.assertEqual(post_json_mock.call_count, 1)
         save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
+        self.mark_activity_not_joined_mock.assert_not_called()
 
     @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
@@ -320,6 +344,62 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("DEBUG recommend_drink: context includes weather data", stderr.getvalue())
         self.assertIn("## 用户上下文", stdout.getvalue())
         save_mobile_mock.assert_not_called()
+        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
+        self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(recommend_drink, "post_json")
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_main_continues_with_context_when_claim_lookup_fails(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        post_json_mock.side_effect = RuntimeError("claim api down")
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [],
+                "stores": [],
+                "weather": None,
+                "orders": None,
+            }
+        }
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--mobile", "15712459595", "--debug"],
+        ), patch("sys.stdout", stdout), patch("sys.stderr", stderr):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("claim lookup failed; continue with context lookup", stderr.getvalue())
+        self.assertIn("未确认", stdout.getvalue())
+        self.assertEqual(
+            fetch_json_mock.call_args_list[0].args,
+            (
+                "http://127.0.0.1:8020/skill/xinyi/context?mobile=15712459595",
+                5,
+            ),
+        )
+        save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_not_called()
+        self.mark_activity_not_joined_mock.assert_not_called()
 
     @patch.object(recommend_drink, "post_json")
     @patch.object(recommend_drink, "save_mobile")
@@ -370,6 +450,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
             ),
         )
         save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_not_called()
+        self.mark_activity_not_joined_mock.assert_called_once_with("15712459595")
 
 
 if __name__ == "__main__":

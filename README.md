@@ -3,8 +3,9 @@
 `xinyi-drink` 是一个面向多 Agent 平台的 Skill 包，当前只覆盖新一好喝相关的四类能力：
 
 1. 参与活动并领取奖励
-2. 查询门店与商品基础信息
-3. 基于商品、门店、天气和可选订单历史做饮品推荐
+2. 查询门店基础信息
+3. 查询商品基础信息
+4. 基于商品、门店、天气和可选订单历史做饮品推荐
 
 ## 仓库与发布目录
 
@@ -18,8 +19,10 @@
 - 服务端接口返回结构化原始数据；Skill 脚本会再整理成文本/表格给大模型使用。
 - 推荐时统一走 `/skill/xinyi/context`，由 `context` 自动返回天气信息。
 - 用户在参与活动或个性化推荐时输入过手机号后，会默认保存在本地状态文件中复用。
+- 本地状态文件保存 `{mobile, activityJoined, updatedAt}`，并尽量设置为 `0600` 权限。
 - 当用户尚未注册或未命中活动用户时，应先引导其登录微信小程序【新一好喝】，并告知小程序绑定的手机号。
 - 领取成功或已参与活动时，脚本会自动补充统一的活动提示、到店门店信息和推荐饮品文案。
+- 本地调试可用 `XINYI_API_BASE_URL` 和 `XINYI_TIMEOUT_SECONDS` 临时覆盖默认 API 配置。
 
 ## 安装
 
@@ -73,6 +76,9 @@ bash install.sh --platform universal
 - `skill/scripts/claim_reward.py`: 调用活动接口；成功或已参与时会补充门店信息和推荐饮品文案
 - `skill/scripts/fetch_stores.py`: 调用门店接口，并输出门店表格
 - `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口自动返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
+- `skill/scripts/recommendation_logic.py`: 选择推荐候选饮品，组织推荐依据和兜底推荐文案
+- `skill/scripts/response_rendering.py`: 输出 Markdown 表格和基础文本结构
+- `skill/scripts/skill_config.py`: 读取默认配置并应用环境变量覆盖
 
 ## 接口
 
@@ -86,6 +92,7 @@ bash install.sh --platform universal
 
 - 默认手机号状态路径：`~/.xinyi-drink/state.json`
 - 可通过环境变量 `XINYI_DRINK_STATE_FILE` 自定义
+- 可通过 `python3 skill/scripts/recommend_drink.py --clear-mobile` 清空当前缓存
 
 ## 参考资料
 

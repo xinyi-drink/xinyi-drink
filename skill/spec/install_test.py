@@ -89,6 +89,45 @@ class InstallScriptTest(unittest.TestCase):
                 result.stdout,
             )
 
+    def test_install_script_backs_up_existing_installation_before_overwrite(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            home_dir = tmp_path / "home"
+            home_dir.mkdir()
+            (home_dir / ".agents").mkdir()
+
+            env = {
+                **dict(__import__("os").environ),
+                "HOME": str(home_dir),
+            }
+            subprocess.run(
+                ["sh", str(skill_root / "install.sh")],
+                cwd=skill_root,
+                env=env,
+                capture_output=True,
+                check=True,
+                text=True,
+            )
+            installed_root = home_dir / ".agents" / "skills" / "xinyi-drink"
+            marker = installed_root / "local-marker.txt"
+            marker.write_text("previous install", encoding="utf-8")
+
+            result = subprocess.run(
+                ["sh", str(skill_root / "install.sh")],
+                cwd=skill_root,
+                env=env,
+                capture_output=True,
+                check=True,
+                text=True,
+            )
+
+            backups = sorted((home_dir / ".agents" / "skills").glob("xinyi-drink.backup.*"))
+            self.assertTrue(backups)
+            self.assertTrue((backups[-1] / "local-marker.txt").exists())
+            self.assertIn("已备份旧版本到", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
