@@ -219,6 +219,77 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         },
     )
     @patch.object(recommend_drink, "fetch_json")
+    def test_activity_query_includes_lobster_activity(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        post_json_mock.return_value = {
+            "data": {
+                "kind": "already_claimed",
+                "user": {"mobile": "15712459595", "nickname": "双龙"},
+            }
+        }
+        self.load_activity_joined_mock.return_value = True
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [
+                    {
+                        "name": "中烘美式·耶加雪菲",
+                        "categories": ["买一赠一福利"],
+                        "price": "14.80",
+                        "cupSizes": ["中杯"],
+                        "temperatures": ["正常冰"],
+                        "sugarLevels": ["无糖"],
+                        "calories": "10 kcal",
+                        "ingredients": ["咖啡豆"],
+                    }
+                ],
+                "stores": [],
+                "weather": None,
+                "orders": {"orders": []},
+            }
+        }
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--mobile", "15712459595", "--query", "有什么活动"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("## 品牌活动", output)
+        self.assertIn("小龙虾专属见面礼", output)
+        self.assertIn("已经成功参与", output)
+        self.assertIn("龙虾专属贴纸", output)
+        self.assertIn("龙虾专属饮品券", output)
+        self.assertIn("小程序龙虾专属头像属性", output)
+        self.assertIn("用户正在问活动", output)
+        self.assertIn("不能只列商品活动", output)
+        self.assertIn("买一赠一福利", output)
+        save_mobile_mock.assert_called_once_with("15712459595")
+        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
+
+    @patch.object(recommend_drink, "post_json")
+    @patch.object(recommend_drink, "save_mobile")
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
     def test_main_falls_back_to_generic_copy_when_weather_api_fails(
         self,
         fetch_json_mock,

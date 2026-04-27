@@ -38,6 +38,7 @@ LOGIN_AND_SHARE_MOBILE_HINT = (
 ACTIVITY_GIFT_ITEMS = ("龙虾专属贴纸", "龙虾专属饮品券", "小程序龙虾专属头像属性")
 ACTIVITY_GIFT_SUMMARY = f"见面礼包含：{'、'.join(ACTIVITY_GIFT_ITEMS)}。"
 STICKER_PICKUP_HINT = "龙虾专属贴纸已为您准备好，到店就能领取，先到先得，赶快哦。"
+ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "优惠", "券", "见面礼", "龙虾", "领取")
 
 
 def pick_store_contact(store: dict[str, Any]) -> Any:
@@ -103,6 +104,33 @@ def render_context_section(context: dict[str, Any]) -> str:
     )
 
 
+def is_activity_query(context: dict[str, Any]) -> bool:
+    text = " ".join(
+        str(context.get(key) or "")
+        for key in ("query", "scene", "preference")
+    )
+    return any(keyword in text for keyword in ACTIVITY_QUERY_KEYWORDS)
+
+
+def render_brand_activity_section(context: dict[str, Any]) -> str:
+    activity_joined = context.get("activityJoined")
+
+    if activity_joined is True:
+        lines = [
+            f"**小龙虾专属见面礼**：用户已经成功参与，{ACTIVITY_GIFT_SUMMARY}",
+            "龙虾专属贴纸到店可领，龙虾专属饮品券和小程序龙虾专属头像属性已经生效。",
+            "回答时可以温和提醒“你已经领过啦”，不要再要求用户重新登录小程序或再次告知手机号。",
+        ]
+    else:
+        lines = [
+            f"**小龙虾专属见面礼**：登录微信小程序【新一好喝】完成注册和手机号绑定后，告知绑定手机号即可领取。{ACTIVITY_GIFT_SUMMARY}",
+            "龙虾专属贴纸到店可领，龙虾专属饮品券和小程序龙虾专属头像属性会随活动状态生效。",
+        ]
+
+    lines.append("这是品牌活动，必须和商品列表里的买一赠一、特价、畅饮卡等商品活动区分开。")
+    return render_text_section("品牌活动", lines)
+
+
 def render_weather_section(weather: dict[str, Any] | None) -> str:
     rows: list[list[Any]] = []
     if weather:
@@ -147,7 +175,7 @@ def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
         return []
 
     highlighted_stores = stores[:2]
-    lines = ["可以就近去下面门店领取贴纸："]
+    lines = ["贴纸领取门店信息我给你列全（地址、电话、设施、排队）："]
 
     for store in highlighted_stores:
         wait_parts: list[str] = []
@@ -156,14 +184,15 @@ def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
         if store.get("makingCupMinutes") is not None:
             wait_parts.append(f"预计{store.get('makingCupMinutes')}分钟")
 
-        lines.extend(
-            [
-                f"**{store.get('name') or '-'}**",
-                f"地址：{store.get('address') or '-'}",
-                f"电话：{pick_store_contact(store) or '未提供联系电话'}",
-                f"设施：{render_store_facilities_text(store) or '未提供设施文案'}",
-                f"排队：{'，'.join(wait_parts) if wait_parts else '暂无排队信息'}",
-            ]
+        lines.append(
+            "；".join(
+                [
+                    f"**{store.get('name') or '-'}**：地址：{store.get('address') or '-'}",
+                    f"电话：{pick_store_contact(store) or '未提供联系电话'}",
+                    f"设施：{render_store_facilities_text(store) or '未提供设施文案'}",
+                    f"排队：{'，'.join(wait_parts) if wait_parts else '暂无排队信息'}",
+                ]
+            )
         )
 
     return lines
@@ -354,6 +383,11 @@ def render_answer_requirements_section(
             f"用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开留资提示：如果仿生人会梦见电子羊，那小龙虾也需要一杯充满灵魂的赛博咖啡！登录微信小程序【新一好喝】，领取见面礼，并告知小程序绑定的手机号。必须说明{ACTIVITY_GIFT_SUMMARY}不要把储值次卡作为见面礼权益，除非接口或素材明确返回。"
         )
 
+    if is_activity_query(context):
+        lines.append(
+            "用户正在问活动/福利/优惠，最终回答必须把“**小龙虾专属见面礼**”作为独立品牌活动，和商品列表里的买一赠一、特价、畅饮卡等商品活动并列展示，不能只列商品活动。"
+        )
+
     if stores:
         lines.extend(
             [
@@ -388,6 +422,7 @@ def render_recommendation_context(
 ) -> str:
     sections = [
         render_context_section(context),
+        render_brand_activity_section(context),
         render_weather_section(weather),
         render_orders_section(orders),
         render_goods_section(goods),

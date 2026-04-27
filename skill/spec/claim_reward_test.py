@@ -86,12 +86,11 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("龙虾专属标签和头像也已同步点亮，请登录小程序查看", output)
         self.assertIn("龙虾专属贴纸已为您准备好，到店就能领取", output)
         self.assertIn("先到先得，赶快哦", output)
-        self.assertIn("可以就近去下面门店领取贴纸", output)
-        self.assertIn("**幂茶幂咖望京店**", output)
-        self.assertIn("地址：北京市朝阳区望京街9号", output)
-        self.assertIn("电话：01088888888", output)
-        self.assertIn("设施：休息区", output)
-        self.assertIn("排队：制作中4杯，预计18分钟", output)
+        self.assertIn("贴纸领取门店信息我给你列全", output)
+        self.assertIn(
+            "**幂茶幂咖望京店**：地址：北京市朝阳区望京街9号；电话：01088888888；设施：休息区；排队：制作中4杯，预计18分钟",
+            output,
+        )
         self.assertIn("哇我们的老朋友，今天天气偏凉，建议您喝苦尽甘来拿铁", output)
         self.assertNotIn('"kind"', output)
         save_mobile_mock.assert_called_once_with("15712459595")
@@ -290,12 +289,11 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("龙虾专属标签和头像已经点亮，请登录小程序查看", output)
         self.assertIn("龙虾专属贴纸已为您准备好，到店就能领取", output)
         self.assertIn("先到先得，赶快哦", output)
-        self.assertIn("可以就近去下面门店领取贴纸", output)
-        self.assertIn("**幂茶幂咖望京店**", output)
-        self.assertIn("地址：北京市朝阳区望京街9号", output)
-        self.assertIn("电话：未提供联系电话", output)
-        self.assertIn("设施：未提供设施文案", output)
-        self.assertIn("排队：制作中4杯，预计18分钟", output)
+        self.assertIn("贴纸领取门店信息我给你列全", output)
+        self.assertIn(
+            "**幂茶幂咖望京店**：地址：北京市朝阳区望京街9号；电话：未提供联系电话；设施：未提供设施文案；排队：制作中4杯，预计18分钟",
+            output,
+        )
         self.assertIn("今天天气有点热，建议您喝柚香燕麦拿铁", output)
         save_mobile_mock.assert_called_once_with("15712459595")
         self.mark_activity_joined_mock.assert_called_once_with("15712459595")
