@@ -98,6 +98,10 @@ def build_recommendation_reason_signals(
     if calories:
         signals.append(f"热量信息：{calories}")
 
+    categories = recommended_good.get("categories") or []
+    if categories:
+        signals.append(f"商品分类：{'、'.join(str(item) for item in categories)}")
+
     ingredients = recommended_good.get("ingredients") or []
     if ingredients:
         signals.append(f"主要配料：{'、'.join(str(item) for item in ingredients)}")

@@ -404,6 +404,7 @@ def render_goods_section(goods: list[dict[str, Any]]) -> str:
     rows = [
         [
             item.get("name"),
+            item.get("categories", []),
             item.get("price"),
             item.get("cupSizes", []),
             item.get("temperatures", []),
@@ -416,7 +417,7 @@ def render_goods_section(goods: list[dict[str, Any]]) -> str:
 
     return render_markdown_table(
         title="商品列表",
-        headers=["商品名称", "价格", "杯型", "温度", "糖度", "卡路里", "配料"],
+        headers=["商品名称", "分类", "价格", "杯型", "温度", "糖度", "卡路里", "配料"],
         rows=rows,
         empty_text="暂无商品数据。",
     )
@@ -490,12 +491,12 @@ def render_answer_requirements_section(
     lines = [
         "先给出一段有温度的主推荐文案，像懂茶饮也懂咖啡的店员姐姐给朋友建议一样自然，熟门店、懂口味，会认真帮用户挑选，松弛有温度，而不是像报告摘要。",
         "可以参考这种语气：“今天这个温度喝它刚好”“如果你想提神又不想太苦，可以先看这杯”。",
-        "回答需要有层次和重点：推荐饮品、适合它的几个原因、必要时的门店信息、必要时的活动留资提示分成 2-4 个短块，不要堆成一整段。",
-        "主推饮品名和门店名必须加粗，也就是要加粗突出；如果提到备选饮品，也可以加粗突出。",
+        "回答需要有层次和重点：推荐饮品、适合它的几个原因、必要时的活动留资提示分成 2-4 个短块，不要堆成一整段。",
+        "主推饮品名必须加粗，也就是要加粗突出；如果提到备选饮品，也可以加粗突出。只有用户明确提到门店时，才返回门店信息并加粗门店名。",
         "可以少量使用合适 emoji 做层次锚点或增强温度，比如饮品、天气、门店、活动各 0-1 个；不要每行都加，也不要连续堆 emoji。",
         "把推荐依据自然融进表达里，可以用轻量分点，但不要使用“推荐理由”，也不要使用“根据你的历史订单偏好”“历史偏好匹配”“天气适配”“推荐门店”这类机械标题。",
         "语气要真诚、松弛、有人情味；少用营销腔、感叹号和模板化开场，不要复述固定模板。",
-        "接口没返回的数据不要编造；没有门店、商品、券名、订单或活动状态时，明确说当前没拿到。",
+        "接口没返回的数据不要编造；没有商品、券名、订单或活动状态时，明确说当前没拿到。用户没有明确问门店时，不要主动提门店缺失。",
         "只有用户追问订单、完成多少单、买过什么时，才根据订单数据返回已完成订单数和购买信息；订单很多时可以更热络，少量订单不要贴重度粉丝标签。",
     ]
 
@@ -533,9 +534,6 @@ def render_answer_requirements_section(
                 "门店名加粗，地址、电话、设施和排队信息用短行呈现。",
             ]
         )
-    else:
-        lines.append("如果没有门店数据，明确说明当前未拿到可用门店信息。")
-
     return render_text_section("回答要求", lines)
 
 
@@ -553,9 +551,10 @@ def render_recommendation_context(
         render_orders_section(orders),
         render_order_followup_section(context, orders),
         render_goods_section(goods),
-        render_stores_section(stores),
-        render_answer_requirements_section(stores, context),
     ]
+    if stores:
+        sections.append(render_stores_section(stores))
+    sections.append(render_answer_requirements_section(stores, context))
     if is_activity_query(context):
         sections.insert(1, render_brand_activity_section(context))
 
