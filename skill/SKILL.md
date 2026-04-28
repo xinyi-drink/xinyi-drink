@@ -64,7 +64,7 @@ metadata:
       permissions: "0600 when supported"
       autoReadPolicy: "recommend_drink 默认不读取缓存手机号；仅内部 --use-saved-mobile 个性化场景读取"
 ---
-# /xinyi-drink — 新一好喝导购与活动 Skill
+# /xinyi-drink — 新一好喝咖啡茶饮Skill
 
 ## AI 必读
 
