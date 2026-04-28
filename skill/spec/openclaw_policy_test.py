@@ -44,9 +44,10 @@ class OpenClawPolicyTest(unittest.TestCase):
             self.assertIn(heading, skill_md)
         self.assertIn("懂茶饮也懂咖啡、不掉书袋的姐姐", skill_md)
         self.assertIn("今天这个温度喝它刚好", skill_md)
-        self.assertIn("各门店现在有多少杯在做、要等多久", skill_md)
-        self.assertIn("苦尽甘来拿铁热量多少", skill_md)
-        self.assertIn("今天北京21°C，想喝茶饮，推荐一杯", skill_md)
+        self.assertIn("帮我领取新一Skill福利", skill_md)
+        self.assertIn("望京店目前有多少杯待做，等待时间多久", skill_md)
+        self.assertIn("某某饮品热量多少", skill_md)
+        self.assertIn("给我推荐一杯适合当下午茶的饮品", skill_md)
         self.assertIn("实时接口失败", skill_md)
         self.assertNotIn("如果你在附近", skill_md)
 
@@ -102,18 +103,24 @@ class OpenClawPolicyTest(unittest.TestCase):
             tool["name"]: tool["description"]
             for tool in payload["tools"]
         }
-        self.assertIn("用户问“大礼包怎么领取”", tool_descriptions["claim_reward"])
-        self.assertIn("用户问“新一有哪些门店”", tool_descriptions["fetch_stores"])
-        self.assertIn("今天北京21°C想喝茶饮", tool_descriptions["recommend_drink"])
-        self.assertIn("苦尽甘来拿铁热量多少", tool_descriptions["recommend_drink"])
-        self.assertIn("我购买过多少杯", tool_descriptions["recommend_drink"])
+        self.assertIn("用户问“帮我领取新一Skill福利”", tool_descriptions["claim_reward"])
+        self.assertIn("用户问“新一咖啡有哪些门店”", tool_descriptions["fetch_stores"])
+        self.assertIn("望京店目前有多少杯待做", tool_descriptions["fetch_stores"])
+        self.assertIn("给我推荐一杯适合当下午茶的饮品", tool_descriptions["recommend_drink"])
+        self.assertIn("某某饮品热量多少", tool_descriptions["recommend_drink"])
+        self.assertIn("有哪些不太甜的果茶", tool_descriptions["recommend_drink"])
+        self.assertIn("我买过多少杯", tool_descriptions["recommend_drink"])
+        self.assertIn("帮我分析我的口味偏好", tool_descriptions["recommend_drink"])
 
     def test_readme_documents_default_backend_and_phone_data_flow(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]
         readme = (repo_root / "README.md").read_text(encoding="utf-8")
 
         self.assertIn("Skill用户大礼包", readme)
+        self.assertIn("skill/SKILL.md", readme)
+        self.assertIn("metadata.openclaw", readme)
         self.assertIn("skill/skill.json", readme)
+        self.assertIn("发布前两处版本号需要保持一致", readme)
         self.assertIn("默认后端", readme)
         self.assertIn("https://ai.xinyicoffee.com/api", readme)
         self.assertIn("POST /skill/xinyi/claim", readme)
@@ -130,13 +137,14 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertNotIn("数据来源", intro_section)
         self.assertNotIn("/skill/xinyi/", intro_section)
         for example in (
-            "我想领取Skill用户大礼包，需要发哪个手机号？",
-            "我购买过多少杯新一？我的饮品偏好是什么？",
-            "各门店现在有多少杯在做？大概要等多久？",
-            "苦尽甘来拿铁热量多少？",
-            "新一有哪些果茶？想喝清爽不太甜的",
-            "今天北京21°C，想喝茶饮，推荐一杯",
-            "下午犯困但不想喝太苦，有什么适合的？",
+            "帮我领取新一Skill福利。",
+            "我买过多少杯？",
+            "帮我分析我的口味偏好。",
+            "新一咖啡有哪些门店？",
+            "望京店目前有多少杯待做，等待时间多久？",
+            "某某饮品热量多少？",
+            "有哪些不太甜的果茶？",
+            "给我推荐一杯适合当下午茶的饮品。",
         ):
             self.assertIn(example, intro_section)
 

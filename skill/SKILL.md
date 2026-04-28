@@ -1,6 +1,6 @@
 ---
 name: xinyi-drink
-version: 1.0.29
+version: 1.1.0
 description: >-
   Use when users ask about 新一好喝/新一咖啡 drinks, stores, menu, activities,
   Skill用户大礼包, today drink recommendations, afternoon tea, feeling sleepy,
@@ -88,11 +88,12 @@ metadata:
 
 | 用户怎么问 | 调用什么 |
 | --- | --- |
-| “大礼包怎么领取”“我想领福利”“领取Skill用户大礼包” | 无手机号先请求用户发送【新一咖啡】绑定手机号；有手机号调用 `scripts/claim_reward.py --mobile <手机号>` |
+| “帮我领取新一Skill福利”“大礼包怎么领取”“我想领福利” | 无手机号先请求用户发送【新一咖啡】绑定手机号；有手机号调用 `scripts/claim_reward.py --mobile <手机号>` |
 | “这个手机号领过了吗”“我登录小程序了”“换个手机号” | 调用 `scripts/claim_reward.py --mobile <手机号>` 同步状态 |
-| “新一有哪些门店”“各门店现在有多少杯在做、要等多久” | 调用 `scripts/fetch_stores.py` |
-| “苦尽甘来拿铁热量多少”“新一有哪些果茶”“有什么活动” | 调用 `scripts/recommend_drink.py --query <问题>` |
-| “今天北京21°C，想喝茶饮，推荐一杯”“下午犯困但不想太苦” | 调用 `scripts/recommend_drink.py`，可带 `--scene`、`--preference`；有手机号再带 `--mobile` |
+| “我买过多少杯”“帮我分析我的口味偏好” | 调用 `scripts/recommend_drink.py --query <问题>`；有手机号再带 `--mobile` |
+| “新一咖啡有哪些门店”“望京店目前有多少杯待做，等待时间多久” | 调用 `scripts/fetch_stores.py` |
+| “某某饮品热量多少”“有哪些不太甜的果茶”“有什么活动” | 调用 `scripts/recommend_drink.py --query <问题>` |
+| “给我推荐一杯适合当下午茶的饮品”“下午犯困但不想太苦” | 调用 `scripts/recommend_drink.py`，可带 `--scene`、`--preference`；有手机号再带 `--mobile` |
 
 边界细节见 `references/intent-routing.md`。普通门店/菜单查询不要索要手机号；活动领取和个性化订单推荐才需要手机号。
 
