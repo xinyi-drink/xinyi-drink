@@ -161,7 +161,11 @@ class ClaimRewardScriptTest(unittest.TestCase):
             '"stores":[{"name":"幂茶幂咖望京店","address":"北京市朝阳区望京街9号","storeMobile":"01088888888",'
             '"facilities":"休息区","businessStatus":1,'
             '"operatingStatus":1,"realtimeState":1,"labels":[{"name":"休息区"}],"makingCupCount":4,'
-            '"makingCupMinutes":18,"storeType":2,"supportUnattendedMode":1}],'
+            '"makingCupMinutes":18,"storeType":2,"supportUnattendedMode":1},'
+            '{"name":"幂茶幂咖诚盈中心店","address":"北京市朝阳区诚盈中心2号楼","storeMobile":"01066666666",'
+            '"facilities":"休息区","businessStatus":1,"makingCupCount":0,"makingCupMinutes":0},'
+            '{"name":"幂茶幂咖第三店","address":"北京市朝阳区第三街1号","storeMobile":"01033333333",'
+            '"facilities":"外摆区","businessStatus":1,"makingCupCount":2,"makingCupMinutes":6}],'
             '"weather":{"city":"Beijing","condition":"cloudy","temperatureC":16},'
             '"orders":{"orders":[{"createdAt":"2025-08-08 14:16:25","orderSn":"20250808141625274275",'
             '"state":6,"pickNo":"A001","serverTime":"2025-08-08 14:36:25","goodsNum":1,'
@@ -195,15 +199,24 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("领取结果：身份验证成功", output)
         self.assertIn("身份验证成功。三重福利发放到账", output)
-        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("「小龙虾贴纸」一套（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("「（前100名）爆款苦尽甘来拿铁免费兑换券」一杯", output)
         self.assertIn("微信小程序里「小龙虾身份标识」", output)
         self.assertIn("你已经领取礼包，现在可以查看你过去的订单信息", output)
         self.assertNotIn("你已完成", output)
         self.assertNotIn("骨灰级粉丝", output)
-        self.assertIn("贴纸领取门店信息我给你列全", output)
+        self.assertIn("您可以到我们的店领取奖励", output)
+        self.assertIn("门店信息我给您列全", output)
         self.assertIn(
             "**幂茶幂咖望京店**：地址：北京市朝阳区望京街9号；电话：01088888888；设施：休息区；排队：制作中4杯，预计18分钟",
+            output,
+        )
+        self.assertIn(
+            "**幂茶幂咖诚盈中心店**：地址：北京市朝阳区诚盈中心2号楼；电话：01066666666；设施：休息区；排队：制作中0杯，预计0分钟",
+            output,
+        )
+        self.assertIn(
+            "**幂茶幂咖第三店**：地址：北京市朝阳区第三街1号；电话：01033333333；设施：外摆区；排队：制作中2杯，预计6分钟",
             output,
         )
         self.assertIn("哇我们的老朋友，今天天气偏凉，建议您喝苦尽甘来拿铁", output)
@@ -301,7 +314,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("领取结果：身份验证成功", output)
         self.assertIn("身份验证成功。三重福利发放到账", output)
-        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("「小龙虾贴纸」一套（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("爆品赠饮一杯（具体饮品以小程序卡券为准）", output)
         self.assertIn("微信小程序里「小龙虾身份标识」", output)
         self.assertNotIn("您已参与活动啦", output)
@@ -458,7 +471,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("领取结果：身份验证成功", output)
         self.assertIn("身份验证成功。三重福利发放到账", output)
-        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("「小龙虾贴纸」一套（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("爆品赠饮一杯（具体饮品以小程序卡券为准）", output)
         self.assertIn("微信小程序里「小龙虾身份标识」", output)
         self.assertNotIn("已经领过", output)
@@ -571,11 +584,12 @@ class ClaimRewardScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("身份验证成功。三重福利发放到账", output)
-        self.assertIn("「小龙虾贴纸」一套（到店展示小程序卡券领取）", output)
+        self.assertIn("「小龙虾贴纸」一套（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("「苦尽甘来拿铁」一杯", output)
         self.assertIn("微信小程序里「小龙虾身份标识」", output)
         self.assertNotIn("您已参与活动啦", output)
-        self.assertIn("贴纸领取门店信息我给你列全", output)
+        self.assertIn("您可以到我们的店领取奖励", output)
+        self.assertIn("门店信息我给您列全", output)
         self.assertIn(
             "**幂茶幂咖望京店**：地址：北京市朝阳区望京街9号；电话：未提供联系电话；设施：未提供设施文案；排队：制作中4杯，预计18分钟",
             output,

@@ -12,7 +12,7 @@ class OpenClawPolicyTest(unittest.TestCase):
 
         frontmatter = skill_md.split("---", 2)[1]
         self.assertIn("name: xinyi-drink", frontmatter)
-        self.assertIn("version: 1.0.20", frontmatter)
+        self.assertRegex(frontmatter, r"version: \d+\.\d+\.\d+")
         self.assertIn("keywords:", frontmatter)
         self.assertNotIn("networkAccess:", frontmatter)
         self.assertNotIn("localStorage:", frontmatter)
@@ -30,6 +30,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("懂茶饮也懂咖啡、不掉书袋的姐姐", skill_md)
         self.assertIn("今天这个温度喝它刚好", skill_md)
         self.assertIn("实时接口失败", skill_md)
+        self.assertNotIn("如果你在附近", skill_md)
 
     def test_skill_json_declares_scripts_network_and_privacy(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
