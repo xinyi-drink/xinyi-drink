@@ -43,7 +43,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertLessEqual(len(body.splitlines()), 130)
         for heading in ("## AI 必读", "## 触发表", "## 主流程", "## 盲区应对", "## 内嵌示例"):
             self.assertIn(heading, skill_md)
-        self.assertIn("懂茶饮也懂咖啡、不掉书袋的姐姐", skill_md)
+        self.assertIn("懂茶饮也懂咖啡的店员姐姐", skill_md)
         self.assertIn("今天这个温度喝它刚好", skill_md)
         self.assertIn("帮我领取新一Skill福利", skill_md)
         self.assertIn("望京店目前有多少杯待做，等待时间多久", skill_md)

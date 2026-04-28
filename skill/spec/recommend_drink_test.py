@@ -162,7 +162,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("Box 门店", output)
         self.assertIn("支持无人模式", output)
         self.assertIn("制作中", output)
-        self.assertIn("像懂茶饮也懂咖啡、不掉书袋的姐姐给朋友建议一样自然", output)
+        self.assertIn("像懂茶饮也懂咖啡的店员姐姐给朋友建议一样自然", output)
         self.assertIn("今天这个温度喝它刚好", output)
         self.assertIn("回答需要有层次和重点", output)
         self.assertIn("主推饮品名和门店名必须加粗", output)
@@ -581,7 +581,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("推荐候选饮品：葡萄毛尖轻咖", output)
-        self.assertIn("像懂茶饮也懂咖啡、不掉书袋的姐姐给朋友建议一样自然", output)
+        self.assertIn("像懂茶饮也懂咖啡的店员姐姐给朋友建议一样自然", output)
         self.assertIn("主推饮品名和门店名必须加粗", output)
         self.assertIn("不要连续堆 emoji", output)
         self.assertIn("不要使用“推荐理由”", output)
