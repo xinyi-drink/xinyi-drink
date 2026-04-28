@@ -4,20 +4,13 @@ from __future__ import annotations
 import argparse
 import sys
 
-from activity_claim import (
-    claim_data_from_response,
-    claim_response_succeeded,
-    is_joined_claim_kind,
-)
 from build_response import render_recommendation_context, render_recommendation_unavailable
 from skill_config import load_config
-from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
+from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger
 from user_state import (
     clear_mobile,
     load_activity_joined,
     load_mobile,
-    mark_activity_joined,
-    mark_activity_not_joined,
 )
 
 
@@ -29,6 +22,11 @@ def main() -> int:
         description="获取聚合推荐上下文，并整理成可直接提供给大模型的文本/表格"
     )
     parser.add_argument("--mobile", help="可选手机号，用于个性化推荐")
+    parser.add_argument(
+        "--use-saved-mobile",
+        action="store_true",
+        help="内部参数：仅在订单摘要或口味偏好等明确个性化场景复用本地手机号",
+    )
     parser.add_argument(
         "--clear-mobile",
         action="store_true",
@@ -44,46 +42,22 @@ def main() -> int:
         clear_mobile()
         debug_log(args.debug, "cleared saved mobile")
 
-    resolved_mobile = args.mobile or load_mobile()
+    resolved_mobile = args.mobile
+    if not resolved_mobile and args.use_saved_mobile:
+        resolved_mobile = load_mobile()
+
     if args.mobile:
         debug_log(args.debug, "resolved mobile from cli argument")
-    elif resolved_mobile:
+    elif args.use_saved_mobile and resolved_mobile:
         debug_log(args.debug, "resolved mobile from local state")
+    elif args.use_saved_mobile:
+        debug_log(args.debug, "saved mobile requested but not found")
     else:
-        debug_log(args.debug, "no mobile resolved")
+        debug_log(args.debug, "no mobile resolved; saved mobile not used")
 
     config = load_config()
     base_url = config["apiBaseUrl"].rstrip("/")
     timeout = config["timeoutSeconds"]
-
-    if resolved_mobile:
-        claim_url = build_url(base_url, "/skill/xinyi/claim")
-        debug_log(args.debug, f"posting claim request to {claim_url}")
-        try:
-            claim_response = post_json(
-                claim_url,
-                timeout,
-                {"mobile": resolved_mobile},
-            )
-        except Exception as exc:
-            debug_log(
-                args.debug,
-                f"claim lookup failed; continue with context lookup and cached activity state: {exc}",
-            )
-        else:
-            claim_data = claim_data_from_response(claim_response)
-            if claim_response_succeeded(claim_response) and claim_data.get("user"):
-                debug_log(args.debug, "claim matched user")
-                if is_joined_claim_kind(claim_data.get("kind")):
-                    mark_activity_joined(resolved_mobile)
-                else:
-                    mark_activity_not_joined(resolved_mobile)
-            elif claim_response_succeeded(claim_response) and claim_data:
-                mark_activity_not_joined(resolved_mobile)
-                debug_log(
-                    args.debug,
-                    "claim did not match user; continue with context lookup",
-                )
 
     context_url = build_url(
         base_url,
@@ -107,7 +81,7 @@ def main() -> int:
     rendered_context = render_recommendation_context(
         context={
             "mobile": resolved_mobile,
-            "mobileFromStore": bool(resolved_mobile and not args.mobile),
+            "mobileFromStore": bool(resolved_mobile and args.use_saved_mobile and not args.mobile),
             "preference": args.preference,
             "query": args.query,
             "scene": args.scene,

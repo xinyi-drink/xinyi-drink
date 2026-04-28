@@ -31,6 +31,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("path: /skill/xinyi/claim", frontmatter)
         self.assertIn("sends: [mobile]", frontmatter)
         self.assertIn("defaultPath: ~/.xinyi-drink/state.json", frontmatter)
+        self.assertIn("autoReadPolicy:", frontmatter)
         self.assertNotIn("networkAccess:", frontmatter)
         self.assertNotIn("environment:", frontmatter)
 
@@ -107,10 +108,29 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("用户问“新一咖啡有哪些门店”", tool_descriptions["fetch_stores"])
         self.assertIn("望京店目前有多少杯待做", tool_descriptions["fetch_stores"])
         self.assertIn("给我推荐一杯适合当下午茶的饮品", tool_descriptions["recommend_drink"])
+        self.assertIn("默认不读取本地缓存手机号", tool_descriptions["recommend_drink"])
+        self.assertIn("useSavedMobile", tool_descriptions["recommend_drink"])
         self.assertIn("某某饮品热量多少", tool_descriptions["recommend_drink"])
         self.assertIn("有哪些不太甜的果茶", tool_descriptions["recommend_drink"])
         self.assertIn("我买过多少杯", tool_descriptions["recommend_drink"])
         self.assertIn("帮我分析我的口味偏好", tool_descriptions["recommend_drink"])
+        recommend_schema = next(
+            tool["inputSchema"]
+            for tool in payload["tools"]
+            if tool["name"] == "recommend_drink"
+        )
+        self.assertIn("useSavedMobile", recommend_schema["properties"])
+        self.assertIn("默认不读取缓存手机号", payload["localStorage"]["autoReadPolicy"])
+
+    def test_recommend_drink_does_not_claim_or_read_saved_mobile_by_default(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+        script = (skill_root / "scripts" / "recommend_drink.py").read_text(encoding="utf-8")
+
+        self.assertIn("--use-saved-mobile", script)
+        self.assertIn("resolved_mobile = args.mobile", script)
+        self.assertIn("if not resolved_mobile and args.use_saved_mobile:", script)
+        self.assertNotIn("post_json", script)
+        self.assertNotIn("/skill/xinyi/claim", script)
 
     def test_readme_documents_default_backend_and_phone_data_flow(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]
@@ -126,6 +146,8 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("POST /skill/xinyi/claim", readme)
         self.assertIn("GET /skill/xinyi/context", readme)
         self.assertIn("手机号会作为请求数据发送到后端", readme)
+        self.assertIn("普通推荐、门店和菜单查询不会自动复用缓存手机号", readme)
+        self.assertIn("活动总览、订单/偏好分析场景复用缓存", readme)
         self.assertIn("不是 instruction-only", readme)
 
     def test_user_facing_capability_examples_are_specific(self) -> None:

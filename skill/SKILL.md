@@ -1,6 +1,6 @@
 ---
 name: xinyi-drink
-version: 1.1.0
+version: 1.1.1
 description: >-
   Use when users ask about 新一好喝/新一咖啡 drinks, stores, menu, activities,
   Skill用户大礼包, today drink recommendations, afternoon tea, feeling sleepy,
@@ -62,6 +62,7 @@ metadata:
       defaultPath: ~/.xinyi-drink/state.json
       contents: [mobile, activityJoined, updatedAt]
       permissions: "0600 when supported"
+      autoReadPolicy: "recommend_drink 默认不读取缓存手机号；仅内部 --use-saved-mobile 个性化场景读取"
 ---
 # /xinyi-drink — 新一好喝导购与活动 Skill
 
@@ -90,12 +91,13 @@ metadata:
 | --- | --- |
 | “帮我领取新一Skill福利”“大礼包怎么领取”“我想领福利” | 无手机号先请求用户发送【新一咖啡】绑定手机号；有手机号调用 `scripts/claim_reward.py --mobile <手机号>` |
 | “这个手机号领过了吗”“我登录小程序了”“换个手机号” | 调用 `scripts/claim_reward.py --mobile <手机号>` 同步状态 |
-| “我买过多少杯”“帮我分析我的口味偏好” | 调用 `scripts/recommend_drink.py --query <问题>`；有手机号再带 `--mobile` |
+| “我买过多少杯”“帮我分析我的口味偏好” | 调用 `scripts/recommend_drink.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>` |
 | “新一咖啡有哪些门店”“望京店目前有多少杯待做，等待时间多久” | 调用 `scripts/fetch_stores.py` |
-| “某某饮品热量多少”“有哪些不太甜的果茶”“有什么活动” | 调用 `scripts/recommend_drink.py --query <问题>` |
-| “给我推荐一杯适合当下午茶的饮品”“下午犯困但不想太苦” | 调用 `scripts/recommend_drink.py`，可带 `--scene`、`--preference`；有手机号再带 `--mobile` |
+| “某某饮品热量多少”“有哪些不太甜的果茶” | 调用 `scripts/recommend_drink.py --query <问题>` |
+| “有什么活动”“现在有什么优惠”“有哪些福利” | 调用 `scripts/recommend_drink.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>` |
+| “给我推荐一杯适合当下午茶的饮品”“下午犯困但不想太苦” | 调用 `scripts/recommend_drink.py`，可带 `--scene`、`--preference`；普通推荐不要复用缓存手机号 |
 
-边界细节见 `references/intent-routing.md`。普通门店/菜单查询不要索要手机号；活动领取和个性化订单推荐才需要手机号。
+边界细节见 `references/intent-routing.md`。普通推荐、门店和菜单查询不要索要或复用缓存手机号；活动领取、活动状态查询和订单/偏好分析才使用手机号。
 
 ## 主流程
 

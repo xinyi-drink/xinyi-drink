@@ -131,7 +131,8 @@ cat <<EOF
   望京店目前有多少杯待做，等待时间多久？
 
 隐私提示：
-  - 参与活动或个性化推荐时，手机号会发送到配置的后端；默认后端见 config/defaults.json。
+  - 普通推荐、门店和菜单查询不会自动复用缓存手机号。
+  - 参与活动、查询活动状态、活动总览、订单摘要或口味偏好分析时，手机号会发送到配置的后端；默认后端见 config/defaults.json。
   - 可通过 XINYI_API_BASE_URL 指向你信任的后端。
   - 本地手机号状态默认保存到 ~/.xinyi-drink/state.json。
   - 清空缓存可运行：python3 "$DEST/scripts/recommend_drink.py" --clear-mobile
