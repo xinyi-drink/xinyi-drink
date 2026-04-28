@@ -1,6 +1,6 @@
 ---
 name: xinyi-drink
-version: 1.0.28
+version: 1.0.29
 description: >-
   Use when users ask about 新一好喝/新一咖啡 drinks, stores, menu, activities,
   Skill用户大礼包, today drink recommendations, afternoon tea, feeling sleepy,
@@ -16,6 +16,52 @@ keywords:
   - 提神
   - 门店
   - 菜单
+metadata:
+  openclaw:
+    packageType: executable-skill
+    instructionOnly: false
+    dataClassification: optional-phone-number
+    privacyReviewed: "2026-04-28"
+    homepage: https://github.com/xinyi-drink/xinyi-drink
+    repository: https://github.com/xinyi-drink/xinyi-drink
+    source:
+      type: git
+      url: https://github.com/xinyi-drink/xinyi-drink
+      directory: skill
+    install:
+      type: local-script
+      script: install.sh
+      dryRun: install.sh --dry-run
+      writesTo:
+        - ~/.openclaw/skills/xinyi-drink
+    runtime:
+      type: python-scripts
+      requiresNetwork: true
+      entrypoints:
+        - scripts/claim_reward.py
+        - scripts/fetch_stores.py
+        - scripts/recommend_drink.py
+    requiredEnv: []
+    optionalEnv:
+      - XINYI_API_BASE_URL
+      - XINYI_TIMEOUT_SECONDS
+      - XINYI_DRINK_STATE_FILE
+    network:
+      defaultApiBaseUrl: https://ai.xinyicoffee.com/api
+      endpoints:
+        - method: POST
+          path: /skill/xinyi/claim
+          sends: [mobile]
+        - method: GET
+          path: /skill/xinyi/context
+          sends: [optional mobile query]
+        - method: GET
+          path: /skill/xinyi/stores
+          sends: []
+    localStorage:
+      defaultPath: ~/.xinyi-drink/state.json
+      contents: [mobile, activityJoined, updatedAt]
+      permissions: "0600 when supported"
 ---
 # /xinyi-drink — 新一好喝导购与活动 Skill
 

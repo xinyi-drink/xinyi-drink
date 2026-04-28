@@ -6,25 +6,40 @@ from pathlib import Path
 
 
 class OpenClawPolicyTest(unittest.TestCase):
-    def test_skill_md_frontmatter_stays_llm_focused(self) -> None:
+    def test_skill_md_frontmatter_declares_openclaw_runtime_metadata(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
 
         frontmatter = skill_md.split("---", 2)[1]
         self.assertIn("name: xinyi-drink", frontmatter)
         self.assertRegex(frontmatter, r"version: \d+\.\d+\.\d+")
+        self.assertIn(f"version: {payload['version']}", frontmatter)
         self.assertIn("keywords:", frontmatter)
+        self.assertIn("metadata:", frontmatter)
+        self.assertIn("openclaw:", frontmatter)
+        self.assertIn("packageType: executable-skill", frontmatter)
+        self.assertIn("instructionOnly: false", frontmatter)
+        self.assertIn("type: local-script", frontmatter)
+        self.assertIn("script: install.sh", frontmatter)
+        self.assertIn("dryRun: install.sh --dry-run", frontmatter)
+        self.assertIn("type: python-scripts", frontmatter)
+        self.assertIn("requiredEnv: []", frontmatter)
+        self.assertIn("optionalEnv:", frontmatter)
+        self.assertIn("XINYI_API_BASE_URL", frontmatter)
+        self.assertIn("defaultApiBaseUrl: https://ai.xinyicoffee.com/api", frontmatter)
+        self.assertIn("path: /skill/xinyi/claim", frontmatter)
+        self.assertIn("sends: [mobile]", frontmatter)
+        self.assertIn("defaultPath: ~/.xinyi-drink/state.json", frontmatter)
         self.assertNotIn("networkAccess:", frontmatter)
-        self.assertNotIn("localStorage:", frontmatter)
         self.assertNotIn("environment:", frontmatter)
-        self.assertNotIn("openclaw:", frontmatter)
-        self.assertNotIn("defaultApiBaseUrl", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        body = skill_md.split("---", 2)[2]
 
-        self.assertLessEqual(len(skill_md.splitlines()), 130)
+        self.assertLessEqual(len(body.splitlines()), 130)
         for heading in ("## AI 必读", "## 触发表", "## 主流程", "## 盲区应对", "## 内嵌示例"):
             self.assertIn(heading, skill_md)
         self.assertIn("懂茶饮也懂咖啡、不掉书袋的姐姐", skill_md)
