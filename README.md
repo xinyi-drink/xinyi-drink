@@ -1,6 +1,6 @@
 # 新一好喝 Skill
 
-`xinyi-drink` 是新一好喝的 AI 导购与活动 Skill。安装后，你的 AI 助手可以帮你领 **Skill 用户大礼包**、查门店、查菜单，并结合天气和可选订单历史推荐饮品。
+`xinyi-drink` 是新一好喝的 AI 导购与活动 Skill。安装后，你的 AI 助手可以帮你领 **Skill 用户大礼包**、查门店、查菜单，并结合天气和可选订单历史推荐茶饮与咖啡。
 
 ## 这个 Skill 能做什么
 
@@ -9,7 +9,7 @@
 | 领取 Skill 用户大礼包 | “如何领取 Skill 用户大礼包？” “我想领新一福利” | `/skill/xinyi/claim` |
 | 查询门店 | “新一有哪些门店？” “附近有店吗？” | `/skill/xinyi/stores` |
 | 查询菜单商品 | “苦尽甘来拿铁是什么？” “菜单里有什么？” | `/skill/xinyi/context` |
-| 推荐饮品 | “给我推荐一杯” “今天喝什么？” | 商品、门店、天气、可选订单历史 |
+| 推荐饮品 | “给我推荐一杯” “今天喝什么？” “困了喝什么？” “下午茶推荐” | 商品、门店、天气、可选订单历史 |
 | 查询订单摘要 | “我完成了几单？” “我以前买过什么？” | 有手机号时的订单摘要 |
 
 ## Skill 用户大礼包
@@ -38,6 +38,10 @@
 新一有哪些门店？
 苦尽甘来拿铁是什么？
 给我推荐一杯
+今天喝什么？
+困了喝什么？
+下午茶推荐
+上班犯困喝什么？
 ```
 
 也可以显式调用：
@@ -46,7 +50,7 @@
 /xinyi-drink 我想领新一好喝的 Skill 用户大礼包
 /xinyi-drink 新一在北京有哪些门店
 /xinyi-drink 新一苦尽甘来拿铁是什么
-/xinyi-drink 给我推荐一杯新一的咖啡
+/xinyi-drink 给我推荐一杯新一的茶饮或咖啡
 ```
 
 ## 仓库与发布目录
@@ -64,6 +68,7 @@
 - 默认后端是 `https://ai.xinyicoffee.com/api`，来源见 `skill/config/defaults.json`。
 - 推荐能力走 `/skill/xinyi/context` 聚合上下文接口。
 - 服务端接口返回结构化原始数据；Skill 脚本会再整理成文本/表格给大模型使用。
+- 活动和手机号领取严格以接口结果为准；门店、菜单、推荐等读类能力在接口失败时会输出可读降级提示，避免编造实时数据。
 - 用户在参与活动或个性化推荐时输入过手机号后，会默认保存在本地状态文件中复用。
 - 本地状态文件保存 `{mobile, activityJoined, updatedAt}`，并尽量设置为 `0600` 权限。
 - 本地调试可用 `XINYI_API_BASE_URL`、`XINYI_TIMEOUT_SECONDS` 和 `XINYI_DRINK_STATE_FILE` 临时覆盖默认配置。
@@ -130,8 +135,8 @@ bash install.sh --platform universal
 
 - `skill/skill.json`: 机器可读元数据，声明能力、脚本、网络、隐私和 OpenClaw 边界
 - `skill/scripts/claim_reward.py`: 调用活动接口；成功或已参与时会补充门店信息和推荐饮品文案
-- `skill/scripts/fetch_stores.py`: 调用门店接口，并输出门店表格
-- `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口自动返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
+- `skill/scripts/fetch_stores.py`: 调用门店接口，并输出门店表格；接口失败时输出可读降级提示，不编造门店
+- `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口自动返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本；接口失败时保留品牌流程和推荐思路，不编造菜单或门店
 - `skill/scripts/recommendation_logic.py`: 选择推荐候选饮品，组织推荐依据和兜底推荐文案
 - `skill/scripts/response_rendering.py`: 输出 Markdown 表格和基础文本结构
 - `skill/scripts/skill_config.py`: 读取默认配置并应用环境变量覆盖

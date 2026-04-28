@@ -14,6 +14,12 @@
     "新一门店",
     "新一福利",
     "Skill 用户大礼包",
+    "今天喝什么",
+    "困了",
+    "下午茶",
+    "上班犯困",
+    "提神",
+    "清爽",
     "咖啡",
     "饮品推荐",
     "门店查询",
@@ -34,7 +40,7 @@
       "name": "claim_reward",
       "display_name": "领取 Skill 用户大礼包",
       "script": "scripts/claim_reward.py",
-      "description": "按用户提供的手机号查询小程序账号并领取 Skill 用户大礼包；成功后返回礼包状态、贴纸领取门店和轻量饮品建议。",
+      "description": "按用户提供的手机号查询小程序账号并领取 Skill 用户大礼包。用户问“大礼包怎么领取”“我想领福利”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态、贴纸领取门店和轻量饮品建议。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -58,7 +64,7 @@
       "name": "fetch_stores",
       "display_name": "查询门店",
       "script": "scripts/fetch_stores.py",
-      "description": "查询新一好喝门店、地址、电话、设施、营业状态和排队信息。",
+      "description": "查询新一好喝门店、地址、电话、设施、营业状态和排队信息。用户问“新一有哪些门店”“附近门店”“地址电话”“现在排队吗”时使用。",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -75,7 +81,7 @@
       "name": "recommend_drink",
       "display_name": "推荐饮品与查询菜单",
       "script": "scripts/recommend_drink.py",
-      "description": "获取商品、门店、天气和可选订单历史，整理成可供 Agent 生成推荐回答的上下文。",
+      "description": "获取商品、门店、天气和可选订单历史，整理成可供 Agent 生成推荐回答的上下文。用户问“今天喝什么”“困了喝什么”“下午茶推荐”“菜单有什么”“苦尽甘来拿铁是什么”“有什么活动”时使用。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -148,7 +154,7 @@
     "XINYI_DRINK_STATE_FILE"
   ],
   "brand_prompt": {
-    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像熟悉的店员在认真帮用户挑饮品，信息有层次但不要报告腔。用户未注册或未登录时，必须说明 Skill 用户大礼包内容和参与方法，不要回答成没有其他活动。",
+    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡、不掉书袋的姐姐在认真帮用户挑饮品，信息有层次但不要报告腔。用户未注册或未登录时，必须说明 Skill 用户大礼包内容和参与方法，不要回答成没有其他活动。",
     "tone": {
       "personality": "warm_practical_honest",
       "avoid": [

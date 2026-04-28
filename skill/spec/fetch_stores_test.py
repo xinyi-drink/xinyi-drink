@@ -94,7 +94,7 @@ class FetchStoresScriptTest(unittest.TestCase):
         },
     )
     @patch("urllib.request.urlopen", side_effect=OSError("connection refused"))
-    def test_fetch_stores_outputs_readable_error_when_request_fails(
+    def test_fetch_stores_outputs_graceful_fallback_when_request_fails(
         self,
         _urlopen_mock,
         _load_config_mock,
@@ -104,8 +104,10 @@ class FetchStoresScriptTest(unittest.TestCase):
         with patch("sys.stdout", stdout):
             exit_code = fetch_stores.main()
 
-        self.assertEqual(exit_code, 1)
-        self.assertIn("门店查询失败：网络请求失败", stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertIn("## 实时数据状态", stdout.getvalue())
+        self.assertIn("门店实时数据暂时没拿到：网络请求失败", stdout.getvalue())
+        self.assertIn("不要编造门店名、地址、电话或排队信息", stdout.getvalue())
 
 
 if __name__ == "__main__":

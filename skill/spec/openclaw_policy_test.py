@@ -6,18 +6,30 @@ from pathlib import Path
 
 
 class OpenClawPolicyTest(unittest.TestCase):
-    def test_skill_metadata_declares_executable_network_and_local_storage(self) -> None:
+    def test_skill_md_frontmatter_stays_llm_focused(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
 
-        self.assertIn("packageType: executable-skill", skill_md)
-        self.assertIn("instructionOnly: false", skill_md)
-        self.assertIn("defaultApiBaseUrl: https://ai.xinyicoffee.com/api", skill_md)
-        self.assertIn("/skill/xinyi/claim", skill_md)
-        self.assertIn("/skill/xinyi/context", skill_md)
-        self.assertIn("~/.xinyi-drink/state.json", skill_md)
-        self.assertIn("XINYI_API_BASE_URL", skill_md)
-        self.assertIn("XINYI_DRINK_STATE_FILE", skill_md)
+        frontmatter = skill_md.split("---", 2)[1]
+        self.assertIn("name: xinyi-drink", frontmatter)
+        self.assertIn("version: 1.0.20", frontmatter)
+        self.assertIn("keywords:", frontmatter)
+        self.assertNotIn("networkAccess:", frontmatter)
+        self.assertNotIn("localStorage:", frontmatter)
+        self.assertNotIn("environment:", frontmatter)
+        self.assertNotIn("openclaw:", frontmatter)
+        self.assertNotIn("defaultApiBaseUrl", frontmatter)
+
+    def test_skill_md_contains_compact_operating_guidance(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+        skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertLessEqual(len(skill_md.splitlines()), 130)
+        for heading in ("## AI 必读", "## 触发表", "## 主流程", "## 盲区应对", "## 内嵌示例"):
+            self.assertIn(heading, skill_md)
+        self.assertIn("懂茶饮也懂咖啡、不掉书袋的姐姐", skill_md)
+        self.assertIn("今天这个温度喝它刚好", skill_md)
+        self.assertIn("实时接口失败", skill_md)
 
     def test_skill_json_declares_scripts_network_and_privacy(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -53,6 +65,18 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["localStorage"]["defaultPath"], "~/.xinyi-drink/state.json")
         self.assertEqual(payload["openclaw"]["packageType"], "executable-skill")
         self.assertFalse(payload["openclaw"]["instructionOnly"])
+
+        keywords = set(payload["keywords"])
+        for keyword in ("今天喝什么", "困了", "下午茶", "上班犯困", "提神", "清爽"):
+            self.assertIn(keyword, keywords)
+
+        tool_descriptions = {
+            tool["name"]: tool["description"]
+            for tool in payload["tools"]
+        }
+        self.assertIn("用户问“大礼包怎么领取”", tool_descriptions["claim_reward"])
+        self.assertIn("用户问“新一有哪些门店”", tool_descriptions["fetch_stores"])
+        self.assertIn("用户问“今天喝什么”", tool_descriptions["recommend_drink"])
 
     def test_readme_documents_default_backend_and_phone_data_flow(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]

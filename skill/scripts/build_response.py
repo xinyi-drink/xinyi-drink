@@ -53,6 +53,33 @@ def build_activity_flow_lines() -> list[str]:
     ]
 
 
+def build_realtime_unavailable_lines(scope: str, error: Any) -> list[str]:
+    return [
+        f"{scope}暂时没拿到：{error}",
+        "可以继续回答品牌能力、领取流程或推荐思路，但必须明确这不是实时门店/菜单结果。",
+        "活动/手机号领取仍以 claim 接口结果为准；不要猜用户是否已参加或券是否已到账。",
+        "门店、菜单、价格、库存和排队信息不要编造；建议稍后重试或打开小程序确认。",
+    ]
+
+
+def render_store_query_unavailable(error: Any) -> str:
+    return render_text_section(
+        "实时数据状态",
+        [
+            f"门店实时数据暂时没拿到：{error}",
+            "可以说明本 Skill 支持查询门店、地址、电话、设施和排队信息。",
+            "不要编造门店名、地址、电话或排队信息；建议稍后重试或打开小程序查看。",
+        ],
+    )
+
+
+def render_recommendation_unavailable(error: Any) -> str:
+    return render_text_section(
+        "实时数据状态",
+        build_realtime_unavailable_lines("推荐上下文", error),
+    )
+
+
 def build_unregistered_activity_lines(mobile: Any) -> list[str]:
     mobile_text = str(mobile).strip() if mobile else "当前手机号"
     return [
@@ -419,7 +446,8 @@ def render_answer_requirements_section(
     context: dict[str, Any],
 ) -> str:
     lines = [
-        "先给出一段有温度的主推荐文案，像熟悉的店员给朋友建议一样自然，认真帮用户挑一杯，而不是像报告摘要。",
+        "先给出一段有温度的主推荐文案，像懂茶饮也懂咖啡、不掉书袋的姐姐给朋友建议一样自然，认真帮用户挑一杯，而不是像报告摘要。",
+        "可以参考这种语气：“今天这个温度喝它刚好”“如果你想提神又不想太苦，可以先看这杯”。",
         "回答需要有层次和重点：推荐饮品、适合它的几个原因、附近可去的门店、活动留资提示分成 3-4 个短块，不要堆成一整段。",
         "主推饮品名和门店名必须加粗，也就是要加粗突出；如果提到备选饮品，也可以加粗突出。",
         "可以少量使用合适 emoji 做层次锚点或增强温度，比如饮品、天气、门店、活动各 0-1 个；不要每行都加，也不要连续堆 emoji。",

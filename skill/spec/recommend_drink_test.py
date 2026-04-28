@@ -166,7 +166,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("Box 门店", output)
         self.assertIn("支持无人模式", output)
         self.assertIn("制作中", output)
-        self.assertIn("像熟悉的店员给朋友建议一样自然", output)
+        self.assertIn("像懂茶饮也懂咖啡、不掉书袋的姐姐给朋友建议一样自然", output)
+        self.assertIn("今天这个温度喝它刚好", output)
         self.assertIn("回答需要有层次和重点", output)
         self.assertIn("主推饮品名和门店名必须加粗", output)
         self.assertIn("少量使用合适 emoji", output)
@@ -533,7 +534,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("推荐候选饮品：葡萄毛尖轻咖", output)
-        self.assertIn("像熟悉的店员给朋友建议一样自然", output)
+        self.assertIn("像懂茶饮也懂咖啡、不掉书袋的姐姐给朋友建议一样自然", output)
         self.assertIn("主推饮品名和门店名必须加粗", output)
         self.assertIn("不要连续堆 emoji", output)
         self.assertIn("不要使用“推荐理由”", output)
@@ -719,7 +720,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         },
     )
     @patch.object(recommend_drink, "fetch_json")
-    def test_main_outputs_readable_error_when_context_request_fails(
+    def test_main_outputs_graceful_fallback_when_context_request_fails(
         self,
         fetch_json_mock,
         _load_config_mock,
@@ -744,8 +745,11 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         ), patch("sys.stdout", stdout):
             exit_code = recommend_drink.main()
 
-        self.assertEqual(exit_code, 1)
-        self.assertIn("获取推荐上下文失败：接口返回 HTTP 500", stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertIn("## 实时数据状态", stdout.getvalue())
+        self.assertIn("推荐上下文暂时没拿到：接口返回 HTTP 500", stdout.getvalue())
+        self.assertIn("活动/手机号领取仍以 claim 接口结果为准", stdout.getvalue())
+        self.assertIn("门店、菜单、价格、库存和排队信息不要编造", stdout.getvalue())
         save_mobile_mock.assert_not_called()
 
     @patch.object(recommend_drink, "post_json")

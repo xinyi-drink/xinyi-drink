@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from build_response import render_stores_section
+from build_response import render_store_query_unavailable, render_stores_section
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger
 
@@ -20,8 +20,8 @@ def main() -> int:
     try:
         payload = fetch_json(url, config["timeoutSeconds"])
     except SkillHttpError as exc:
-        sys.stdout.write(f"门店查询失败：{exc}")
-        return 1
+        sys.stdout.write(render_store_query_unavailable(exc))
+        return 0
 
     sys.stdout.write(render_stores_section(payload.get("data", {}).get("stores", [])))
 

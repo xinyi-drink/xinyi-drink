@@ -9,7 +9,7 @@ from activity_claim import (
     claim_response_succeeded,
     is_joined_claim_kind,
 )
-from build_response import render_recommendation_context
+from build_response import render_recommendation_context, render_recommendation_unavailable
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
 from user_state import (
@@ -94,8 +94,8 @@ def main() -> int:
     try:
         context_response = fetch_json(context_url, timeout)
     except SkillHttpError as exc:
-        sys.stdout.write(f"获取推荐上下文失败：{exc}")
-        return 1
+        sys.stdout.write(render_recommendation_unavailable(exc))
+        return 0
     context_data = context_response.get("data", {})
 
     weather_data = context_data.get("weather")
