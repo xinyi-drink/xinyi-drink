@@ -30,6 +30,8 @@ class InstallScriptTest(unittest.TestCase):
 
             installed_root = home_dir / ".agents" / "skills" / "xinyi-drink"
             self.assertTrue(installed_root.exists())
+            self.assertTrue((installed_root / "skill.json").exists())
+            self.assertTrue((installed_root / "references" / "response-examples.md").exists())
             self.assertFalse(any(installed_root.rglob("__pycache__")))
             self.assertIn("已安装 xinyi-drink 到", result.stdout)
             self.assertIn("/xinyi-drink 给我推荐一杯新一的咖啡", result.stdout)

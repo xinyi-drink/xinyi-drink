@@ -1,0 +1,168 @@
+{
+  "name": "xinyi-drink",
+  "display_name": "新一好喝导购与活动",
+  "description": "领取新一好喝 Skill 用户大礼包，查询门店和商品，并结合天气、门店与可选订单历史推荐饮品。",
+  "version": "1.0.20",
+  "author": "Xinyi",
+  "license": "MIT",
+  "repository": "https://github.com/xinyi-drink/xinyi-drink",
+  "category": "饮品导购",
+  "keywords": [
+    "新一好喝",
+    "新一咖啡",
+    "新一饮料",
+    "新一门店",
+    "新一福利",
+    "Skill 用户大礼包",
+    "小龙虾福利",
+    "咖啡",
+    "饮品推荐",
+    "门店查询",
+    "菜单",
+    "订单历史"
+  ],
+  "runtime": {
+    "type": "python-scripts",
+    "requires_network": true,
+    "entrypoints": [
+      "scripts/claim_reward.py",
+      "scripts/fetch_stores.py",
+      "scripts/recommend_drink.py"
+    ]
+  },
+  "tools": [
+    {
+      "name": "claim_reward",
+      "display_name": "领取 Skill 用户大礼包",
+      "script": "scripts/claim_reward.py",
+      "description": "按用户提供的手机号查询小程序账号并领取 Skill 用户大礼包；成功后返回礼包状态、贴纸领取门店和轻量饮品建议。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "description": "用户在【新一好喝】微信小程序绑定的手机号"
+          }
+        },
+        "required": [
+          "mobile"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "fetch_stores",
+      "display_name": "查询门店",
+      "script": "scripts/fetch_stores.py",
+      "description": "查询新一好喝门店、地址、电话、设施、营业状态和排队信息。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "recommend_drink",
+      "display_name": "推荐饮品与查询菜单",
+      "script": "scripts/recommend_drink.py",
+      "description": "获取商品、门店、天气和可选订单历史，整理成可供 Agent 生成推荐回答的上下文。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "description": "可选；用于个性化推荐和订单摘要"
+          },
+          "query": {
+            "type": "string",
+            "description": "用户原始问题"
+          },
+          "scene": {
+            "type": "string",
+            "description": "可选；如早餐、下午茶、提神、低卡等场景"
+          },
+          "preference": {
+            "type": "string",
+            "description": "可选；如低糖、热饮、咖啡、茶、清爽等偏好"
+          }
+        },
+        "required": []
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ],
+  "network": {
+    "default_api_base_url": "https://ai.xinyicoffee.com/api",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/skill/xinyi/claim",
+        "sends": [
+          "mobile"
+        ],
+        "purpose": "查询并领取 Skill 用户大礼包"
+      },
+      {
+        "method": "GET",
+        "path": "/skill/xinyi/context",
+        "sends": [
+          "optional mobile query"
+        ],
+        "purpose": "获取商品、门店、天气和可选订单摘要"
+      },
+      {
+        "method": "GET",
+        "path": "/skill/xinyi/stores",
+        "sends": [],
+        "purpose": "查询门店信息"
+      }
+    ]
+  },
+  "localStorage": {
+    "defaultPath": "~/.xinyi-drink/state.json",
+    "contents": [
+      "mobile",
+      "activityJoined",
+      "updatedAt"
+    ],
+    "permissions": "0600 when supported"
+  },
+  "environment": [
+    "XINYI_API_BASE_URL",
+    "XINYI_TIMEOUT_SECONDS",
+    "XINYI_DRINK_STATE_FILE"
+  ],
+  "brand_prompt": {
+    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像熟悉的店员在认真帮用户挑饮品，信息有层次但不要报告腔。用户未注册或未登录时，必须说明 Skill 用户大礼包内容和参与方法，不要回答成没有其他活动。",
+    "tone": {
+      "personality": "warm_practical_honest",
+      "avoid": [
+        "marketing_jargon",
+        "fabricated_facts",
+        "robotic_report_style"
+      ]
+    }
+  },
+  "openclaw": {
+    "packageType": "executable-skill",
+    "instructionOnly": false,
+    "dataClassification": "optional-phone-number",
+    "privacyReviewed": "2026-04-28"
+  }
+}

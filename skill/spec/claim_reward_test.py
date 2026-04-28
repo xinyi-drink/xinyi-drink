@@ -139,7 +139,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("领取结果：请先登录小程序", output)
         self.assertIn("15712459595 目前还没查到【新一好喝】小程序登录/绑定记录", output)
-        self.assertIn("您可以通过绑定【新一好喝】的注册手机号，领取Skill用户大礼包", output)
+        self.assertIn("您可以通过绑定【新一好喝】的注册手机号，领取 Skill 用户大礼包", output)
         self.assertIn("活动内容：三重福利包含", output)
         self.assertIn("「小龙虾贴纸」一套", output)
         self.assertIn("爆品赠饮一杯", output)
@@ -237,7 +237,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("领取方式", output)
-        self.assertIn("您可以通过绑定【新一好喝】的注册手机号，领取Skill用户大礼包", output)
+        self.assertIn("您可以通过绑定【新一好喝】的注册手机号，领取 Skill 用户大礼包", output)
         self.assertIn("活动内容：三重福利包含", output)
         self.assertIn("先绑定【新一好喝】注册手机号，再把手机号发来", output)
         self.assertIn("微信小程序搜索【新一咖啡】", output)

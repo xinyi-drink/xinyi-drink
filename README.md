@@ -1,11 +1,53 @@
 # 新一好喝 Skill
 
-`xinyi-drink` 是一个面向多 Agent 平台的 Skill 包，当前只覆盖新一好喝相关的四类能力：
+`xinyi-drink` 是新一好喝的 AI 导购与活动 Skill。安装后，你的 AI 助手可以帮你领 **Skill 用户大礼包**、查门店、查菜单，并结合天气和可选订单历史推荐饮品。
 
-1. 参与活动并领取奖励
-2. 查询门店基础信息
-3. 查询商品基础信息
-4. 基于商品、门店、天气和可选订单历史做饮品推荐
+## 这个 Skill 能做什么
+
+| 能力 | 你可以这样问 | 数据来源 |
+| --- | --- | --- |
+| 领取 Skill 用户大礼包 | “如何领取 Skill 用户大礼包？” “我想领新一福利” | `/skill/xinyi/claim` |
+| 查询门店 | “新一有哪些门店？” “附近有店吗？” | `/skill/xinyi/stores` |
+| 查询菜单商品 | “苦尽甘来拿铁是什么？” “菜单里有什么？” | `/skill/xinyi/context` |
+| 推荐饮品 | “给我推荐一杯” “今天喝什么？” | 商品、门店、天气、可选订单历史 |
+| 查询订单摘要 | “我完成了几单？” “我以前买过什么？” | 有手机号时的订单摘要 |
+
+## Skill 用户大礼包
+
+用户可以通过绑定【新一好喝】的注册手机号，领取 Skill 用户大礼包。
+
+礼包内容：
+
+- 「小龙虾贴纸」一套（到店展示小程序卡券领取）
+- 爆品赠饮一杯（具体饮品以接口返回的小程序卡券为准）
+- 微信小程序里「小龙虾身份标识」
+
+领取流程：
+
+1. 打开微信小程序，搜索【新一咖啡】
+2. 登录/注册并绑定手机号
+3. 把小程序绑定手机号发给 AI 助手
+4. Skill 调用活动接口查询并领取礼包
+
+如果手机号还没查到小程序登录/绑定记录，Skill 会提示先完成登录/绑定，不会回答成“没有其他活动”。
+
+## 使用示例
+
+```text
+如何领取 Skill 用户大礼包？
+新一有哪些门店？
+苦尽甘来拿铁是什么？
+给我推荐一杯
+```
+
+也可以显式调用：
+
+```text
+/xinyi-drink 我想领新一好喝的小龙虾福利
+/xinyi-drink 新一在北京有哪些门店
+/xinyi-drink 新一苦尽甘来拿铁是什么
+/xinyi-drink 给我推荐一杯新一的咖啡
+```
 
 ## 仓库与发布目录
 
@@ -14,18 +56,16 @@
 - 实际对外发布与安装使用的 Skill 包根目录是 `xinyi-drink/skill/`
 - 因此仓库根目录下的文档、安装命令与文件路径，都应以 `skill/` 作为真实 Skill 根目录来理解
 
-## 当前事实
+## 包类型与运行方式
 
-- 这是包含可执行脚本的 Skill，不是 instruction-only 包；核心脚本在 `skill/scripts/`，安装脚本是 `skill/install.sh`。
+- 这是包含可执行脚本的 Skill，不是 instruction-only 包。
+- 核心脚本在 `skill/scripts/`，安装脚本是 `skill/install.sh`。
+- `skill/skill.json` 提供机器可读元数据，便于 OpenClaw/ClawHub/其它平台识别能力、脚本、网络和隐私边界。
 - 默认后端是 `https://ai.xinyicoffee.com/api`，来源见 `skill/config/defaults.json`。
 - 推荐能力走 `/skill/xinyi/context` 聚合上下文接口。
-- 商品基础信息目前由 `/skill/xinyi/context` 聚合返回，并由脚本整理给大模型使用。
 - 服务端接口返回结构化原始数据；Skill 脚本会再整理成文本/表格给大模型使用。
-- 推荐时统一走 `/skill/xinyi/context`，由 `context` 自动返回天气信息。
 - 用户在参与活动或个性化推荐时输入过手机号后，会默认保存在本地状态文件中复用。
 - 本地状态文件保存 `{mobile, activityJoined, updatedAt}`，并尽量设置为 `0600` 权限。
-- 当用户尚未注册或未命中活动用户时，应先引导其登录微信小程序【新一好喝】，并告知小程序绑定的手机号。
-- 领取成功或已参与活动时，脚本会自动补充统一的活动提示、到店门店信息和推荐饮品文案。
 - 本地调试可用 `XINYI_API_BASE_URL`、`XINYI_TIMEOUT_SECONDS` 和 `XINYI_DRINK_STATE_FILE` 临时覆盖默认配置。
 
 ## OpenClaw 与隐私说明
@@ -86,25 +126,9 @@ bash install.sh --platform universal
 - ClawHub 安装：`npx clawhub@latest install xinyi-drink`，会安装到 `~/.openclaw/skills/`，并且 WebUI 可直接识别。
 - Git 安装：`git clone https://github.com/xinyi-drink/xinyi-drink && cd xinyi-drink/skill && bash install.sh --platform openclaw`，适合本地审查源码后安装。
 
-## 使用示例
-
-```text
-/xinyi-drink 我想领新一好喝的小龙虾福利
-/xinyi-drink 新一在北京有哪些门店
-/xinyi-drink 新一苦尽甘来拿铁是什么
-/xinyi-drink 给我推荐一杯新一的咖啡
-```
-
-自然触发场景下，也可以直接问：
-
-```text
-新一在北京有哪些门店
-给我推荐一杯新一的咖啡
-我想喝饮料，推荐一杯
-```
-
 ## 脚本
 
+- `skill/skill.json`: 机器可读元数据，声明能力、脚本、网络、隐私和 OpenClaw 边界
 - `skill/scripts/claim_reward.py`: 调用活动接口；成功或已参与时会补充门店信息和推荐饮品文案
 - `skill/scripts/fetch_stores.py`: 调用门店接口，并输出门店表格
 - `skill/scripts/recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口自动返回的商品、门店、天气和可选订单历史整理成推荐上下文表格/文本
@@ -133,6 +157,7 @@ bash install.sh --platform universal
 - [意图路由](skill/references/intent-routing.md)
 - [活动流程](skill/references/activity-flow.md)
 - [回答规范](skill/references/response-guidelines.md)
+- [回答样例与盲区应对](skill/references/response-examples.md)
 - [注意事项](skill/references/gotchas.md)
 - [隐私边界](skill/references/privacy-boundaries.md)
 - [平台安装说明](skill/references/platform-install.md)

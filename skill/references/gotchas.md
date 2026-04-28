@@ -12,3 +12,6 @@
 - 生产默认 API 来自 `config/defaults.json`，本地调试可用 `XINYI_API_BASE_URL` 和 `XINYI_TIMEOUT_SECONDS` 临时覆盖。
 - 本 Skill 包含 Python 脚本和 `install.sh`，发布元数据不能标记为 instruction-only。
 - 使用真实手机号前，先确认默认后端 `https://ai.xinyicoffee.com/api` 或 `XINYI_API_BASE_URL` 指向可信服务。
+- 回答用户时不要暴露内部脚本路径、缓存结构、OpenClaw 审查细节，除非用户明确询问 Skill 实现或安全边界。
+- 用户问功能介绍时，只讲可见能力和使用方式；用户问活动时，先讲 Skill 用户大礼包，不要只列商品活动。
+- 接口没有返回的数据就是盲区：宁可说明没拿到，也不要补全门店、商品、券名、订单或活动状态。
