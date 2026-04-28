@@ -4,6 +4,11 @@ from __future__ import annotations
 import argparse
 import sys
 
+from activity_claim import (
+    claim_data_from_response,
+    claim_response_succeeded,
+    is_joined_claim_kind,
+)
 from build_response import render_recommendation_context
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
@@ -13,7 +18,6 @@ from user_state import (
     load_mobile,
     mark_activity_joined,
     mark_activity_not_joined,
-    save_mobile,
 )
 
 
@@ -48,15 +52,10 @@ def main() -> int:
     else:
         debug_log(args.debug, "no mobile resolved")
 
-    if args.mobile:
-        save_mobile(args.mobile)
-        debug_log(args.debug, "saved mobile from cli argument before claim lookup")
-
     config = load_config()
     base_url = config["apiBaseUrl"].rstrip("/")
     timeout = config["timeoutSeconds"]
 
-    mobile_for_context = resolved_mobile
     if resolved_mobile:
         claim_url = build_url(base_url, "/skill/xinyi/claim")
         debug_log(args.debug, f"posting claim request to {claim_url}")
@@ -72,24 +71,24 @@ def main() -> int:
                 f"claim lookup failed; continue with context lookup and cached activity state: {exc}",
             )
         else:
-            claim_data = claim_response.get("data", {})
-            if claim_data.get("user"):
+            claim_data = claim_data_from_response(claim_response)
+            if claim_response_succeeded(claim_response) and claim_data.get("user"):
                 debug_log(args.debug, "claim matched user")
-                if claim_data.get("kind") in {"granted", "already_claimed"}:
+                if is_joined_claim_kind(claim_data.get("kind")):
                     mark_activity_joined(resolved_mobile)
                 else:
                     mark_activity_not_joined(resolved_mobile)
-            else:
+            elif claim_response_succeeded(claim_response) and claim_data:
                 mark_activity_not_joined(resolved_mobile)
                 debug_log(
                     args.debug,
-                    "claim did not match user; keep saved mobile and continue with context lookup",
+                    "claim did not match user; continue with context lookup",
                 )
 
     context_url = build_url(
         base_url,
         "/skill/xinyi/context",
-        {"mobile": mobile_for_context},
+        {"mobile": resolved_mobile},
     )
     debug_log(args.debug, f"fetching context from {context_url}")
     try:
@@ -107,12 +106,12 @@ def main() -> int:
 
     rendered_context = render_recommendation_context(
         context={
-            "mobile": mobile_for_context,
-            "mobileFromStore": bool(mobile_for_context and not args.mobile),
+            "mobile": resolved_mobile,
+            "mobileFromStore": bool(resolved_mobile and not args.mobile),
             "preference": args.preference,
             "query": args.query,
             "scene": args.scene,
-            "activityJoined": load_activity_joined(mobile_for_context),
+            "activityJoined": load_activity_joined(resolved_mobile),
         },
         goods=context_data.get("goods", []),
         stores=context_data.get("stores", []),

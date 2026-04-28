@@ -43,7 +43,7 @@
 也可以显式调用：
 
 ```text
-/xinyi-drink 我想领新一好喝的小龙虾福利
+/xinyi-drink 我想领新一好喝的 Skill 用户大礼包
 /xinyi-drink 新一在北京有哪些门店
 /xinyi-drink 新一苦尽甘来拿铁是什么
 /xinyi-drink 给我推荐一杯新一的咖啡

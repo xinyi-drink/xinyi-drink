@@ -40,9 +40,16 @@ def write_state(payload: dict) -> None:
 
 
 def save_mobile(mobile: str) -> None:
+    current = load_state()
+    current_activity_joined = current.get("activityJoined")
+    activity_joined = (
+        current_activity_joined
+        if current.get("mobile") == mobile and isinstance(current_activity_joined, bool)
+        else None
+    )
     payload = {
         "mobile": mobile,
-        "activityJoined": None,
+        "activityJoined": activity_joined,
         "updatedAt": datetime.now(timezone.utc).isoformat(),
     }
     write_state(payload)

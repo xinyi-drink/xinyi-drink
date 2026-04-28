@@ -34,6 +34,12 @@ class UserStateTest(unittest.TestCase):
                 self.assertEqual(state_file.stat().st_mode & 0o777, 0o600)
                 self.assertTrue(user_state.has_activity_joined("15712459595"))
 
+                user_state.save_mobile("15712459595")
+
+                payload = json.loads(state_file.read_text(encoding="utf-8"))
+                self.assertEqual(payload["mobile"], "15712459595")
+                self.assertTrue(payload["activityJoined"])
+
                 user_state.save_mobile("18888888888")
 
                 payload = json.loads(state_file.read_text(encoding="utf-8"))

@@ -102,10 +102,6 @@ def build_recommendation_reason_signals(
     if ingredients:
         signals.append(f"主要配料：{'、'.join(str(item) for item in ingredients)}")
 
-    categories = recommended_good.get("categories") or []
-    if categories:
-        signals.append(f"商品分类：{'、'.join(str(item) for item in categories)}")
-
     return signals
 
 
@@ -151,13 +147,7 @@ def build_recommendation_material_lines(
     lines = [
         f"推荐候选饮品：{recommended_name}",
         f"推荐素材字段：candidateName={recommended_name}",
-        "主推荐文案由大模型根据下方素材自行生成，像熟悉的店员给朋友建议一样自然、温和、有温度，不要照搬固定模板。",
-        "回答要有清晰层次：主推饮品、适合原因、附近门店、活动留资提示分成短块；主推饮品名和门店名要加粗。",
-        "可以少量使用合适 emoji 做层次锚点或增加温度，但不要每行都加，也不要连续堆 emoji。",
-        "推荐依据要融进自然短句里，可以写 2-4 个轻量要点，但不要使用“推荐理由”“历史偏好匹配”“天气适配”这类生硬标题。",
-        "活动留资提示以“回答要求”区块为准；已参加活动不要输出主动留资文案。",
-        "订单统计和购买明细只在用户追问订单信息时展开，不要在礼包领取成功后主动列出。",
-        "只使用已提供的历史订单、天气、商品属性和门店信息，不要编造未返回的数据。",
+        "主推荐文案由大模型根据下方素材自行生成；回答结构、语气和活动留资以“回答要求”区块为准。",
     ]
     reason_signals = build_recommendation_reason_signals(
         recommended_good,
