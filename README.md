@@ -58,6 +58,16 @@
 /xinyi-drink 给我推荐一杯适合当下午茶的饮品。
 ```
 
+## 安装方式
+
+直接拷贝下面这句话发给你的 AI 助手例如OpenClaw/Hermes/WorkBuddy：
+
+```text
+帮我安装新一咖啡 Skill，地址是：https://github.com/xinyi-drink/xinyi-drink
+```
+
+Agent 会自动帮你安装好。
+
 ## 仓库与发布目录
 
 - 当前 GitHub 仓库根目录是 `xinyi-drink/`
