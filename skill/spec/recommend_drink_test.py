@@ -175,10 +175,12 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("有人情味", output)
         self.assertIn("接口没返回的数据不要编造", output)
         self.assertIn("不要使用“根据你的历史订单偏好”", output)
-        self.assertIn("用户当前不是在问活动/福利/领取", output)
-        self.assertIn("不要主动提活动、福利、身份验证、礼包到账或领取", output)
+        self.assertNotIn("是否已参加活动", output)
+        self.assertIn("当前问题不需要账户权益信息", output)
+        self.assertIn("不要追加无关的账户、礼包或领取状态", output)
         self.assertNotIn("三重福利已经到账", output)
         self.assertNotIn("可说明身份验证成功", output)
+        self.assertNotIn("登录成功后只提示用户已经领取礼包", output)
         self.assertNotIn("您可以通过绑定【新一咖啡】的注册手机号", output)
         self.assertIn("推荐候选饮品：杨枝甘露|轻乳版", output)
         self.assertIn("挺舒服", output)
@@ -409,8 +411,10 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("## 品牌活动", output)
+        self.assertIn("| 是否已参加活动 | 是 |", output)
         self.assertIn("Skill用户大礼包", output)
         self.assertIn("用户身份已验证成功", output)
+        self.assertIn("登录成功后只提示用户已经领取礼包", output)
         self.assertIn("Skill用户大礼包包含", output)
         self.assertIn("小龙虾贴纸", output)
         self.assertIn("Skill用户专享赠饮券", output)
@@ -664,7 +668,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("claim lookup failed; continue with context lookup", stderr.getvalue())
-        self.assertIn("| 是否已参加活动 | 是 |", stdout.getvalue())
+        self.assertNotIn("是否已参加活动", stdout.getvalue())
+        self.assertIn("当前问题不需要账户权益信息", stdout.getvalue())
         self.assertEqual(
             fetch_json_mock.call_args_list[0].args,
             (

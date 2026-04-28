@@ -177,22 +177,22 @@ def render_context_section(context: dict[str, Any]) -> str:
     if mobile:
         mobile_source = "本地缓存" if context.get("mobileFromStore") else "本次输入"
 
-    activity_joined = context.get("activityJoined")
-    if activity_joined is True:
-        activity_joined_label = "是"
-    elif activity_joined is False:
-        activity_joined_label = "否"
-    else:
-        activity_joined_label = "未确认"
-
     rows = [
         ["手机号", mobile],
         ["手机号来源", mobile_source],
-        ["是否已参加活动", activity_joined_label],
         ["用户问题", context.get("query")],
         ["推荐场景", context.get("scene")],
         ["用户偏好", context.get("preference")],
     ]
+    if is_activity_query(context):
+        activity_joined = context.get("activityJoined")
+        if activity_joined is True:
+            activity_joined_label = "是"
+        elif activity_joined is False:
+            activity_joined_label = "否"
+        else:
+            activity_joined_label = "未确认"
+        rows.insert(2, ["是否已参加活动", activity_joined_label])
 
     return render_markdown_table(
         title="用户上下文",
@@ -496,18 +496,18 @@ def render_answer_requirements_section(
         "把推荐依据自然融进表达里，可以用轻量分点，但不要使用“推荐理由”，也不要使用“根据你的历史订单偏好”“历史偏好匹配”“天气适配”“推荐门店”这类机械标题。",
         "语气要真诚、松弛、有人情味；少用营销腔、感叹号和模板化开场，不要复述固定模板。",
         "接口没返回的数据不要编造；没有门店、商品、券名、订单或活动状态时，明确说当前没拿到。",
-        "登录成功后只提示用户已经领取礼包、现在可以查看过去的订单信息；不要主动展开已完成多少单或购买明细。",
         "只有用户追问订单、完成多少单、买过什么时，才根据订单数据返回已完成订单数和购买信息；订单很多时可以更热络，少量订单不要贴重度粉丝标签。",
     ]
 
     if activity_query and context.get("activityJoined"):
+        lines.append("登录成功后只提示用户已经领取礼包、现在可以查看过去的订单信息；不要主动展开已完成多少单或购买明细。")
         lines.append("用户正在问活动/福利/领取，且已参加过活动：可以说明已领取/已到账，并展示接口返回明细；不要要求重新参与或重新留资。")
     elif activity_query or not context.get("activityJoined"):
         lines.append(
             f"用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开主动留资文案：{LEAD_CAPTURE_COPY} 用户提交手机号后如果仍未注册，再提示：{UNREGISTERED_LOGIN_COPY}"
         )
     else:
-        lines.append("用户当前不是在问活动/福利/领取，即使 activityJoined=true，也不要主动提活动、福利、身份验证、礼包到账或领取；只回答用户当前的饮品、菜单、订单或门店问题。")
+        lines.append("当前问题不需要账户权益信息；最终回答只围绕用户当前的饮品、菜单、订单或门店问题，不要追加无关的账户、礼包或领取状态。")
 
     if activity_query:
         lines.append(
