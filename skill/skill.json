@@ -1,8 +1,8 @@
 {
   "name": "xinyi-drink",
   "display_name": "新一好喝导购与活动",
-  "description": "领取新一好喝 Skill 用户大礼包，查询门店和商品，并结合天气、门店与可选订单历史推荐饮品。",
-  "version": "1.0.22",
+  "description": "领取新一好喝Skill用户大礼包，查询门店和商品，并结合天气、门店与可选订单历史推荐饮品。",
+  "version": "1.0.25",
   "author": "Xinyi",
   "license": "MIT",
   "repository": "https://github.com/xinyi-drink/xinyi-drink",
@@ -13,7 +13,7 @@
     "新一饮料",
     "新一门店",
     "新一福利",
-    "Skill 用户大礼包",
+    "Skill用户大礼包",
     "今天喝什么",
     "困了",
     "下午茶",
@@ -38,15 +38,15 @@
   "tools": [
     {
       "name": "claim_reward",
-      "display_name": "领取 Skill 用户大礼包",
+      "display_name": "领取Skill用户大礼包",
       "script": "scripts/claim_reward.py",
-      "description": "按用户提供的手机号查询小程序账号并领取 Skill 用户大礼包。用户问“大礼包怎么领取”“我想领福利”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态、贴纸领取门店和轻量饮品建议。",
+      "description": "按用户提供的手机号查询小程序账号并领取Skill用户大礼包。用户问“大礼包怎么领取”“我想领福利”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态、贴纸领取门店和轻量饮品建议。",
       "inputSchema": {
         "type": "object",
         "properties": {
           "mobile": {
             "type": "string",
-            "description": "用户在【新一好喝】微信小程序绑定的手机号"
+            "description": "用户在【新一咖啡】微信小程序绑定的手机号"
           }
         },
         "required": [
@@ -121,7 +121,7 @@
         "sends": [
           "mobile"
         ],
-        "purpose": "查询并领取 Skill 用户大礼包"
+        "purpose": "查询并领取Skill用户大礼包"
       },
       {
         "method": "GET",
@@ -154,7 +154,7 @@
     "XINYI_DRINK_STATE_FILE"
   ],
   "brand_prompt": {
-    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡、不掉书袋的姐姐在认真帮用户挑饮品，信息有层次但不要报告腔。用户未注册或未登录时，必须说明 Skill 用户大礼包内容和参与方法，不要回答成没有其他活动。",
+    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡、不掉书袋的姐姐在认真帮用户挑饮品，信息有层次但不要报告腔。用户未提供手机号时，先请用户发送微信小程序【新一咖啡】绑定手机号；查询确认未注册或未登录时，再说明Skill用户大礼包内容、活动规则和两步领取方法，不要回答成没有其他活动。活动参与成功、用户查询已参与或领取成功时，必须展示接口返回明细，包括成功/失败数量、券发放 message、实际券名和数量。",
     "tone": {
       "personality": "warm_practical_honest",
       "avoid": [

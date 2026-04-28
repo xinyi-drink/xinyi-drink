@@ -83,7 +83,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         repo_root = Path(__file__).resolve().parents[2]
         readme = (repo_root / "README.md").read_text(encoding="utf-8")
 
-        self.assertIn("Skill 用户大礼包", readme)
+        self.assertIn("Skill用户大礼包", readme)
         self.assertIn("skill/skill.json", readme)
         self.assertIn("默认后端", readme)
         self.assertIn("https://ai.xinyicoffee.com/api", readme)

@@ -33,23 +33,29 @@ ORDER_STATE_LABELS = {
     6: "已完成",
 }
 
-LEAD_CAPTURE_COPY = "您可以通过绑定【新一好喝】的注册手机号，领取 Skill 用户大礼包。"
-UNREGISTERED_LOGIN_COPY = "目前还没登录过新一好喝，请到微信小程序搜索【新一咖啡】登录后获取全部福利和功能。"
-ACTIVITY_GIFT_SUMMARY = "三重福利包含：「小龙虾贴纸」一套（到任意门店对暗号【小龙虾】领取，先到先得）、根据接口返回的爆品赠饮一杯、微信小程序里「小龙虾身份标识」。"
+LEAD_CAPTURE_COPY = "请把您微信小程序【新一咖啡】绑定的手机号发过来，我帮您领取Skill用户大礼包。"
+UNREGISTERED_LOGIN_COPY = "请先到微信小程序搜索【新一咖啡】，登录/注册并绑定手机号；完成后把绑定手机号发来，我再帮你继续领取。"
+ACTIVITY_GIFT_SUMMARY = "Skill用户大礼包包含：小龙虾贴纸、Skill用户身份标识、Skill用户专享赠饮券。"
+ACTIVITY_RULE_LINES = [
+    "活动规则：",
+    "小龙虾贴纸：到任意门店对暗号【小龙虾】领取，先到先得。",
+    "Skill用户专享赠饮券：（前100名）爆款苦尽甘来拿铁免费兑换券 / （101-500名）5折饮品券 / （501-以后）8折饮品券。",
+    "Skill用户身份标识：参与即可添加SKILL 标签、龙虾头像。",
+]
 ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "优惠", "券", "见面礼", "龙虾", "领取")
 ORDER_QUERY_KEYWORDS = ("订单", "过去", "历史", "完成", "买过", "购买", "消费", "几单", "多少单", "下过单")
 
 
 def build_register_instruction() -> str:
-    return "请先在微信小程序搜索【新一咖啡】，登录/注册并绑定手机号；完成后把绑定手机号发来，我会帮您继续领取。"
+    return UNREGISTERED_LOGIN_COPY
 
 
 def build_activity_flow_lines() -> list[str]:
     return [
         LEAD_CAPTURE_COPY,
-        f"活动内容：{ACTIVITY_GIFT_SUMMARY}",
-        "领取流程：先绑定【新一好喝】注册手机号，再把手机号发来，我会帮您领取。",
-        f"如果还没登录过新一好喝，{build_register_instruction()}",
+        ACTIVITY_GIFT_SUMMARY,
+        *ACTIVITY_RULE_LINES,
+        "我会先按您发来的手机号查询领取；如果没有查到绑定记录，再提醒您完成小程序登录/绑定。",
     ]
 
 
@@ -83,10 +89,12 @@ def render_recommendation_unavailable(error: Any) -> str:
 def build_unregistered_activity_lines(mobile: Any) -> list[str]:
     mobile_text = str(mobile).strip() if mobile else "当前手机号"
     return [
-        f"{mobile_text} 目前还没查到【新一好喝】小程序登录/绑定记录；请到微信小程序搜索【新一咖啡】登录后获取全部福利和功能。",
-        LEAD_CAPTURE_COPY,
-        f"活动内容：{ACTIVITY_GIFT_SUMMARY}",
-        f"参与方法：{build_register_instruction()}",
+        f"{mobile_text} 目前还没查到【新一咖啡】小程序登录/绑定记录。",
+        "🎁 领取步骤",
+        "第一步：绑定手机号\n打开微信 → 搜索【新一咖啡】小程序 → 登录/注册并绑定您的手机号",
+        "第二步：发送手机号给我\n绑定完成后，把您的手机号发过来，我帮您领取Skill用户大礼包。",
+        ACTIVITY_GIFT_SUMMARY,
+        *ACTIVITY_RULE_LINES,
         "这不是没有活动，而是需要先完成小程序登录/绑定后才能发放礼包。",
     ]
 
@@ -125,12 +133,42 @@ def format_coupon_label(coupon_names: list[str]) -> str:
 
 def format_coupon_reward(coupon_names: list[str]) -> str:
     if not coupon_names:
-        return "爆品赠饮一杯（具体饮品以小程序卡券为准）"
+        return "Skill用户专享赠饮券（具体饮品以小程序卡券为准）"
 
     if len(coupon_names) == 1:
-        return f"{format_coupon_label(coupon_names)}一杯"
+        return f"Skill用户专享赠饮券{format_coupon_label(coupon_names)}"
 
-    return f"{format_coupon_label(coupon_names)}各一杯"
+    return f"Skill用户专享赠饮券：{format_coupon_label(coupon_names)}"
+
+
+def build_claim_detail_lines(data: dict[str, Any], items: list[dict[str, Any]]) -> list[str]:
+    lines = [
+        "接口返回明细：",
+        f"成功{data.get('successCount', 0)}项，失败{data.get('failCount', 0)}项。",
+    ]
+
+    if not items:
+        lines.append("未返回新的券明细；系统识别该手机号已参与/已领取。")
+        return lines
+
+    for index, item in enumerate(items, 1):
+        message = item.get("message") or ("发放成功" if item.get("state") == 1 else "未发放成功")
+        parts = [f"第{index}项：{message}"]
+        coupon = item.get("coupon")
+        coupon_name = coupon.get("name") if isinstance(coupon, dict) else None
+        if item.get("state") == 1:
+            parts.append(f"获得：{format_coupon_reward([coupon_name] if coupon_name else [])}")
+        elif coupon_name:
+            parts.append(f"券名：{coupon_name}")
+        if item.get("couponNum") is not None:
+            parts.append(f"数量：{item.get('couponNum')}")
+        if item.get("rank") is not None:
+            parts.append(f"排名：{item.get('rank')}")
+        if item.get("rankLevel") is not None:
+            parts.append(f"档位：{item.get('rankLevel')}")
+        lines.append("；".join(parts))
+
+    return lines
 
 
 def render_context_section(context: dict[str, Any]) -> str:
@@ -185,13 +223,16 @@ def render_brand_activity_section(context: dict[str, Any]) -> str:
 
     if activity_joined is True:
         lines = [
-            f"**Skill 用户大礼包**：用户身份已验证成功，{ACTIVITY_GIFT_SUMMARY}",
+            f"**Skill用户大礼包**：用户身份已验证成功，{ACTIVITY_GIFT_SUMMARY}",
+            *ACTIVITY_RULE_LINES,
             "回答时可以说明福利已经到账，不要再要求用户重新登录小程序或再次告知手机号。",
         ]
     else:
         lines = [
-            f"**Skill 用户大礼包**：{LEAD_CAPTURE_COPY}",
-            "用户可以提供【新一好喝】注册手机号领取；如果仍未注册，提醒去微信小程序搜索【新一咖啡】登录后获取全部福利和功能。",
+            f"**Skill用户大礼包**：{LEAD_CAPTURE_COPY}",
+            ACTIVITY_GIFT_SUMMARY,
+            *ACTIVITY_RULE_LINES,
+            "先假设用户已经登录/绑定小程序，只请求用户发送手机号；只有查询后确认未绑定时，再提示去微信小程序搜索【新一咖啡】登录/注册并绑定手机号。",
         ]
 
     lines.append("这是品牌活动，必须和商品列表里的买一赠一、特价、畅饮卡等商品活动区分开。")
@@ -271,8 +312,9 @@ def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
 def build_activity_completion_lines(kind: str, coupon_names: list[str]) -> list[str]:
     if is_joined_claim_kind(kind):
         return [
-            "身份验证成功。三重福利发放到账：",
-            f"「小龙虾贴纸」一套（到任意门店对暗号【小龙虾】领取，先到先得）；{format_coupon_reward(coupon_names)}；微信小程序里「小龙虾身份标识」。",
+            "身份验证成功。Skill用户大礼包已发放到账：",
+            f"小龙虾贴纸（到任意门店对暗号【小龙虾】领取，先到先得）；Skill用户身份标识；{format_coupon_reward(coupon_names)}。",
+            *ACTIVITY_RULE_LINES,
             "你已经领取礼包，现在可以查看你过去的订单信息。",
         ]
 
@@ -466,7 +508,7 @@ def render_answer_requirements_section(
 
     if is_activity_query(context):
         lines.append(
-            "用户正在问活动/福利/优惠，最终回答必须把“**Skill 用户大礼包**”作为独立品牌活动，和商品列表里的买一赠一、特价、畅饮卡等商品活动并列展示，不能只列商品活动。"
+            "用户正在问活动/福利/优惠，最终回答必须把“**Skill用户大礼包**”作为独立品牌活动，和商品列表里的买一赠一、特价、畅饮卡等商品活动并列展示，不能只列商品活动。"
         )
 
     if stores:
@@ -554,12 +596,15 @@ def render_claim_result(
     if kind == "granted":
         title = "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
+        lines.extend(build_claim_detail_lines(data, items))
     elif kind == "obtained_after_registration":
         title = "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
+        lines.extend(build_claim_detail_lines(data, items))
     elif kind == "already_claimed":
         title = "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
+        lines.extend(build_claim_detail_lines(data, items))
     elif kind == "no_reward_config":
         title = "领取方式"
         lines.extend(build_activity_flow_lines())
