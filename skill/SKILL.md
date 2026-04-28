@@ -91,7 +91,7 @@ metadata:
 直接拷贝下面这句话发给你的 AI 助手例如OpenClaw/Hermes/WorkBuddy：
 
 ```text
-帮我安装新一咖啡 Skill，地址是：https://github.com/xinyi-drink/xinyi-drink
+帮我安装新一咖啡 Skill，地址是：https://github.com/xinyi-drink/xinyi-drink/tree/main/skill
 ```
 
 Agent 会自动帮你安装好。
