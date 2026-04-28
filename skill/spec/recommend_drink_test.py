@@ -146,6 +146,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("## 用户上下文", output)
         self.assertIn("## 商品列表", output)
+        self.assertIn("| 商品名称 | 价格 | 杯型 | 温度 | 糖度 | 卡路里 | 配料 |", output)
+        self.assertNotIn("| 商品名称 | 分类 | 价格 |", output)
         self.assertIn("## 门店列表", output)
         self.assertIn("## 订单历史", output)
         self.assertNotIn("## 订单追问素材", output)

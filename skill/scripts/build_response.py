@@ -310,7 +310,6 @@ def render_goods_section(goods: list[dict[str, Any]]) -> str:
     rows = [
         [
             item.get("name"),
-            item.get("categories", []),
             item.get("price"),
             item.get("cupSizes", []),
             item.get("temperatures", []),
@@ -323,7 +322,7 @@ def render_goods_section(goods: list[dict[str, Any]]) -> str:
 
     return render_markdown_table(
         title="商品列表",
-        headers=["商品名称", "分类", "价格", "杯型", "温度", "糖度", "卡路里", "配料"],
+        headers=["商品名称", "价格", "杯型", "温度", "糖度", "卡路里", "配料"],
         rows=rows,
         empty_text="暂无商品数据。",
     )
