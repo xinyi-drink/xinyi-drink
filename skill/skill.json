@@ -2,10 +2,16 @@
   "name": "xinyi-drink",
   "display_name": "新一好喝导购与活动",
   "description": "领取新一好喝Skill用户大礼包，查询门店和商品，并结合天气、门店与可选订单历史推荐饮品。",
-  "version": "1.0.25",
+  "version": "1.0.28",
   "author": "Xinyi",
   "license": "MIT",
+  "homepage": "https://github.com/xinyi-drink/xinyi-drink",
   "repository": "https://github.com/xinyi-drink/xinyi-drink",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/xinyi-drink/xinyi-drink",
+    "directory": "skill"
+  },
   "category": "饮品导购",
   "keywords": [
     "新一好喝",
@@ -20,6 +26,12 @@
     "上班犯困",
     "提神",
     "清爽",
+    "低卡",
+    "热量",
+    "果茶",
+    "等待时长",
+    "历史订单",
+    "饮品偏好",
     "咖啡",
     "饮品推荐",
     "门店查询",
@@ -33,6 +45,18 @@
       "scripts/claim_reward.py",
       "scripts/fetch_stores.py",
       "scripts/recommend_drink.py"
+    ]
+  },
+  "install": {
+    "type": "local-script",
+    "script": "install.sh",
+    "dry_run": "install.sh --dry-run",
+    "writes_to": [
+      "~/.openclaw/skills/xinyi-drink",
+      "~/.agents/skills/xinyi-drink",
+      "~/.claude/skills/xinyi-drink",
+      "~/.hermes/skills/xinyi-drink",
+      ".cursor/rules/xinyi-drink"
     ]
   },
   "tools": [
@@ -81,7 +105,7 @@
       "name": "recommend_drink",
       "display_name": "推荐饮品与查询菜单",
       "script": "scripts/recommend_drink.py",
-      "description": "获取商品、门店、天气和可选订单历史，整理成可供 Agent 生成推荐回答的上下文。用户问“今天喝什么”“困了喝什么”“下午茶推荐”“菜单有什么”“苦尽甘来拿铁是什么”“有什么活动”时使用。",
+      "description": "获取商品、门店、天气和可选订单历史，整理成可供 Agent 生成推荐回答的上下文。用户问“今天北京21°C想喝茶饮”“下午犯困但不想太苦”“苦尽甘来拿铁热量多少”“新一有哪些果茶”“我购买过多少杯”“我的饮品偏好是什么”“有什么活动”时使用。",
       "inputSchema": {
         "type": "object",
         "properties": {
