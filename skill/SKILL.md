@@ -1,6 +1,6 @@
 ---
 name: xinyi-drink
-version: 1.1.1
+version: 1.1.2
 description: >-
   Use when users ask about 新一好喝/新一咖啡 drinks, stores, menu, activities,
   Skill用户大礼包, today drink recommendations, afternoon tea, feeling sleepy,

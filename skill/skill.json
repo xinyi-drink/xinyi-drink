@@ -2,7 +2,7 @@
   "name": "xinyi-drink",
   "display_name": "新一好喝咖啡茶饮Skill",
   "description": "领取新一好喝Skill用户大礼包，查询门店和商品，并结合天气、门店与可选订单历史推荐饮品。",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "Xinyi",
   "license": "MIT",
   "homepage": "https://github.com/xinyi-drink/xinyi-drink",
