@@ -43,7 +43,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("permissions: \"0600 when supported\"", frontmatter)
         self.assertIn("clearCommand: python3 scripts/recommend_drink.py --clear-mobile", frontmatter)
         self.assertIn("sharedMachineWarning: true", frontmatter)
-        self.assertIn("version: 1.1.9", frontmatter)
+        self.assertIn("version: 1.1.20", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -84,7 +84,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn('"version": "1.1.9"', json.dumps(payload, ensure_ascii=False))
+        self.assertIn('"version": "1.1.20"', json.dumps(payload, ensure_ascii=False))
         self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")

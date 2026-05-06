@@ -269,7 +269,6 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertNotIn("## 品牌活动", output)
         self.assertNotIn("## 门店列表", output)
         self.assertNotIn("暂无门店数据", output)
-        self.assertNotIn("这是品牌活动，必须和商品列表里的买一赠一", output)
 
     @patch.object(recommend_drink, "post_json", create=True)
     @patch.object(recommend_drink, "load_mobile", return_value=None)
@@ -510,7 +509,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 "goods": [
                     {
                         "name": "中烘美式·耶加雪菲",
-                        "categories": ["买一赠一福利"],
+                        "categories": ["咖啡"],
                         "price": "14.80",
                         "cupSizes": ["中杯"],
                         "temperatures": ["正常冰"],
@@ -551,7 +550,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertIn("Skill用户专享赠饮券：（前100名）爆款苦尽甘来拿铁免费兑换券 / （101-500名）5折饮品券 / （501-以后）8折饮品券", output)
         self.assertIn("Skill用户身份标识：参与即可添加SKILL 标签、龙虾头像", output)
         self.assertIn("用户正在问活动", output)
-        self.assertIn("不能只列商品活动", output)
+        self.assertIn("不要扩展到其它商品信息", output)
         self.assertIn("中烘美式·耶加雪菲", output)
 
     @patch.object(recommend_drink, "post_json", create=True)

@@ -42,7 +42,7 @@ ACTIVITY_RULE_LINES = [
     "Skill用户专享赠饮券：（前100名）爆款苦尽甘来拿铁免费兑换券 / （101-500名）5折饮品券 / （501-以后）8折饮品券。",
     "Skill用户身份标识：参与即可添加SKILL 标签、龙虾头像。",
 ]
-ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "优惠", "券", "见面礼", "龙虾", "领取")
+ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "券", "见面礼", "龙虾", "领取")
 ORDER_QUERY_KEYWORDS = (
     "我的订单",
     "个人订单",
@@ -251,7 +251,6 @@ def render_brand_activity_section(context: dict[str, Any]) -> str:
             "先假设用户已经登录/绑定小程序，只请求用户发送手机号；只有查询后确认未绑定时，再提示去微信小程序搜索【新一咖啡】登录/注册并绑定手机号。",
         ]
 
-    lines.append("这是品牌活动，必须和商品列表里的买一赠一、特价、畅饮卡等商品活动区分开。")
     return render_text_section("品牌活动", lines)
 
 
@@ -499,17 +498,17 @@ def render_answer_requirements_section(
 
     if activity_query:
         lines.append(
-            "用户正在问活动/福利/优惠，最终回答必须把“**Skill用户大礼包**”作为独立品牌活动，和商品列表里的买一赠一、特价、畅饮卡等商品活动并列展示，不能只列商品活动。"
+            "用户正在问活动/福利，最终回答只说明“**Skill用户大礼包**”；不要扩展到其它商品信息。"
         )
 
     if stores:
         if activity_query:
             store_transition_line = (
                 "根据用户这次意图自然承接门店：领活动奖励时可说“您可以到我们的店领取奖励”；"
-                "饮品推荐时可说“您可以到我们店里畅饮”；商品活动或畅饮卡场景可说“您可以到我们店畅饮”。"
+                "饮品推荐时可说“您可以到我们店里畅饮”。"
             )
         else:
-            store_transition_line = "根据用户这次意图自然承接门店：饮品推荐时可说“您可以到我们店里畅饮”；商品活动或畅饮卡场景可说“您可以到我们店畅饮”。"
+            store_transition_line = "根据用户这次意图自然承接门店：饮品推荐时可说“您可以到我们店里畅饮”。"
         lines.extend(
             [
                 "若回答中展示门店，必须展示全部返回门店，带上每家门店名和详细地址；如果当前回答不需要门店，可以完全不展示门店。",
