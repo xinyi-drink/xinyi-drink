@@ -12,10 +12,39 @@ from activity_claim import (
 from build_response import render_claim_result
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger, post_json
-from user_state import load_activity_joined, mark_activity_joined, mark_activity_not_joined
+from user_state import (
+    load_activity_joined,
+    load_mobile,
+    mark_activity_joined,
+    mark_activity_not_joined,
+)
 
 
 debug_log = make_debug_logger("claim_reward")
+
+
+def mask_mobile(mobile: str) -> str:
+    if len(mobile) <= 7:
+        return mobile
+    return f"{mobile[:3]}****{mobile[-4:]}"
+
+
+def render_session_claim_locked(saved_mobile: str) -> str:
+    return (
+        f"当前会话已使用手机号 {mask_mobile(saved_mobile)} 领取过 Skill用户大礼包，"
+        "不能更换手机号重复领取。"
+    )
+
+
+def render_claim_app_error(response: dict) -> str | None:
+    if claim_response_succeeded(response):
+        return None
+
+    message = str(response.get("message") or "").strip()
+    if not message:
+        return None
+
+    return f"领取活动失败：{message}"
 
 
 def main() -> int:
@@ -23,6 +52,16 @@ def main() -> int:
     parser.add_argument("--mobile", required=True, help="用户手机号")
     parser.add_argument("--debug", action="store_true", help="输出调试信息到 stderr")
     args = parser.parse_args()
+
+    saved_mobile = load_mobile()
+    if (
+        saved_mobile
+        and saved_mobile != args.mobile
+        and load_activity_joined(saved_mobile) is True
+    ):
+        debug_log(args.debug, "saved mobile already claimed; rejecting mobile switch")
+        sys.stdout.write(render_session_claim_locked(saved_mobile))
+        return 0
 
     config = load_config()
     base_url = config["apiBaseUrl"].rstrip("/")
@@ -35,6 +74,11 @@ def main() -> int:
     except SkillHttpError as exc:
         sys.stdout.write(f"领取活动失败：{exc}")
         return 1
+
+    claim_error = render_claim_app_error(parsed)
+    if claim_error:
+        sys.stdout.write(claim_error)
+        return 0
 
     claim_data = normalize_claim_data(parsed, args.mobile, previous_activity_joined)
     context_data = None

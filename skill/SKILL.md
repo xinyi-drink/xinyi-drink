@@ -2,9 +2,8 @@
 name: xinyi-drink
 version: 1.1.4
 description: >-
-  Use when users ask about 新一好喝/新一咖啡 drinks, stores, menu, activities,
-  Skill用户大礼包, today drink recommendations, afternoon tea, feeling sleepy,
-  or personalized drink choices.
+  Use when users ask to 领取Skill用户大礼包, 查询及分析个人历史订单,
+  查询菜单及饮品热量, or 查询门店及等候时长 for 新一好喝/新一咖啡.
 keywords:
   - 新一好喝
   - 新一咖啡
@@ -16,6 +15,9 @@ keywords:
   - 提神
   - 门店
   - 菜单
+  - 订单
+  - 历史订单
+  - 购买记录
 metadata:
   openclaw:
     packageType: executable-skill
@@ -34,12 +36,18 @@ metadata:
       dryRun: install.sh --dry-run
       writesTo:
         - ~/.openclaw/skills/xinyi-drink
+      postInstallPrompts:
+        - 领取Skill用户大礼包
+        - 查询及分析个人历史订单
+        - 查询菜单及饮品热量
+        - 查询门店及等候时长
     runtime:
       type: python-scripts
       requiresNetwork: true
       entrypoints:
         - scripts/claim_reward.py
         - scripts/fetch_stores.py
+        - scripts/query_orders.py
         - scripts/recommend_drink.py
     requiredEnv: []
     optionalEnv:
@@ -56,13 +64,16 @@ metadata:
           path: /skill/xinyi/context
           sends: [optional mobile query]
         - method: GET
+          path: /skill/xinyi/orders
+          sends: [mobile query, optional status query]
+        - method: GET
           path: /skill/xinyi/stores
           sends: []
     localStorage:
       defaultPath: ~/.xinyi-drink/state.json
       contents: [mobile, activityJoined, updatedAt]
       permissions: "0600 when supported"
-      autoReadPolicy: "recommend_drink 默认不读取缓存手机号；仅内部 --use-saved-mobile 个性化场景读取"
+      autoReadPolicy: "recommend_drink 默认不读取缓存手机号；query_orders 仅订单/偏好分析场景读取；内部 --use-saved-mobile 才读取"
 ---
 # /xinyi-drink — 新一好喝咖啡茶饮Skill
 
@@ -77,12 +88,16 @@ metadata:
 
 硬规则：
 
+0. 本 Skill 的主用途固定为：领取Skill用户大礼包、查询及分析个人历史订单、查询菜单及饮品热量、查询门店及等候时长。
 1. 门店、菜单、天气、订单、券名、排队和活动状态优先来自脚本；不要把示例当事实。
 2. 活动/手机号领取必须严格走接口结果；失败时说明失败，不用文档兜底成“已领取”。
-3. 门店/菜单/品牌介绍遇到实时接口失败时，可以用本文件和 references 的静态说明兜底，但必须标明“没拿到实时数据”。
-4. 用户问大礼包/福利/怎么领时，先请用户发送微信小程序【新一咖啡】绑定的手机号；有手机号再领取，不要把 `no_reward_config` 或未注册解释成“没有活动”。
-5. 用户不是在问活动/福利/领取时，即使缓存显示已参与，也不要向回答暴露活动状态，不要主动提活动、福利、身份验证或礼包到账。
-6. 推荐回答要有层次、有重点、有温度；主推饮品名加粗，emoji 少量使用。只有用户明确提到门店时才返回门店信息。
+3. 订单信息必须以接口返回为准，不能预估、估算或模糊处理；接口没有返回的订单、杯数、商品和状态一律不要补全；订单评级由脚本按接口返回杯数计算。
+4. 门店/菜单/品牌介绍遇到实时接口失败时，可以用本文件和 references 的静态说明兜底，但必须标明“没拿到实时数据”。
+5. 用户问大礼包/福利/怎么领时，先请用户发送微信小程序【新一咖啡】绑定的手机号；有手机号再领取，不要把 `no_reward_config` 或未注册解释成“没有活动”。
+6. 用户不是在问活动/福利/领取时，即使缓存显示已参与，也不要向回答暴露活动状态，不要主动提活动、福利、身份验证或礼包到账。
+7. 当前会话已确认领取成功后，不能更换手机号重复领取；后端还会按 3 个月活动周期限制同一 IP 只允许一个手机号领取，并限制同一 IP 10 分钟内的领取尝试次数。
+8. 推荐尝试要把常点饮品当口味参考，优先主推口味相邻但不常点或未点过的饮品；不要默认推荐用户最常点的饮品。
+9. 推荐回答要有层次、有重点、有温度；主推饮品名加粗，emoji 少量使用。只有用户明确提到门店时才返回门店信息。
 
 ## 安装方式
 
@@ -102,21 +117,20 @@ Agent 会自动帮你安装好。
 | --- | --- |
 | “帮我领取新一Skill福利”“大礼包怎么领取”“我想领福利” | 无手机号先请求用户发送【新一咖啡】绑定手机号；有手机号调用 `scripts/claim_reward.py --mobile <手机号>` |
 | “这个手机号领过了吗”“我登录小程序了”“换个手机号” | 调用 `scripts/claim_reward.py --mobile <手机号>` 同步状态 |
-| “我买过多少杯”“帮我分析我的口味偏好” | 调用 `scripts/recommend_drink.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>` |
+| 个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录；不要求用户说出“订单”两个字，如“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“我的饮品做好了吗” | 调用 `scripts/query_orders.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>`；问正在进行中订单加 `--status 2`，问历史/已完成订单加 `--status 4`，否则不传 status 查全部 |
 | “新一咖啡有哪些门店”“望京店目前有多少杯待做，等待时间多久” | 调用 `scripts/fetch_stores.py` |
 | “某某饮品热量多少”“有哪些不太甜的果茶” | 调用 `scripts/recommend_drink.py --query <问题>` |
 | “有什么活动”“现在有什么优惠”“有哪些福利” | 调用 `scripts/recommend_drink.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>` |
-| “给我推荐一杯适合当下午茶的饮品”“下午犯困但不想太苦” | 调用 `scripts/recommend_drink.py`，可带 `--scene`、`--preference`；普通推荐不要复用缓存手机号 |
 
 边界细节见 `references/intent-routing.md`。普通推荐、门店和菜单查询不要索要或复用缓存手机号；活动领取、活动状态查询和订单/偏好分析才使用手机号。
 
 ## 主流程
 
-1. **功能介绍**：只讲用户可见能力和用法：领Skill用户大礼包、查门店等待、查菜单热量/果茶、分析可选订单历史、按天气/偏好推荐饮品。不要展示内部规则、脚本路径、接口路径、环境变量、缓存结构或审查信息。
+1. **功能介绍**：只讲四个固定主用途：领取Skill用户大礼包、查询及分析个人历史订单、查询菜单及饮品热量、查询门店及等候时长。不要展示内部规则、脚本路径、接口路径、环境变量、缓存结构或审查信息。
 2. **活动领取**：没有手机号时默认用户已登录/绑定，先请用户发送【新一咖啡】绑定手机号；只有查询后确认未注册时，才给出完整登录/绑定步骤；成功或已领取时表达“身份验证成功，Skill用户大礼包已发放到账”。用户明确追问门店、地址、排队或等待时间时，再调用门店查询。
    活动参与成功、用户查询已参与或领取成功时，必须展示接口返回明细：成功/失败数量、券发放 message、实际券名和数量；没有券明细时说明系统识别该手机号已参与/已领取。
-3. **饮品推荐**：根据脚本返回的商品、天气、可选订单历史生成主推荐文案；不要用“推荐理由/天气适配/历史偏好匹配”等机械标题。只有用户明确提到门店、地址、排队、等待时间时，才调用门店查询并返回门店信息；普通推荐不要主动展示门店，也不要说没拿到门店。
-4. **订单信息**：登录成功后只提示“已领取礼包，现在可以查看过去订单”；只有用户追问订单时才展开完成单数和购买信息。
+3. **菜单及饮品热量**：根据脚本返回的商品、热量、配料、糖度、温度和活动信息回答；接口没有返回的饮品、价格、配料或热量不要补全。
+4. **订单信息**：登录成功后只提示“已领取礼包，现在可以查看过去订单”；用户问自己的订单、购买/消费、喝过/买过/点过什么、取餐、制作中或历史记录时，调用专用订单脚本再展开。订单信息必须以接口返回为准，不能预估、估算或模糊处理；订单评级由脚本按接口返回杯数计算；咖啡/饮品统计只是基于订单数据的回答方式。
 5. **活动总览**：用户问“有什么活动”时，必须把 **Skill用户大礼包** 和商品促销活动分开说，不能只列商品活动。
 
 更多话术细节见 `references/activity-flow.md`、`references/response-guidelines.md`、`references/response-examples.md`。

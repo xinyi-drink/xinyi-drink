@@ -25,7 +25,7 @@ def main() -> int:
     parser.add_argument(
         "--use-saved-mobile",
         action="store_true",
-        help="内部参数：仅在订单摘要或口味偏好等明确个性化场景复用本地手机号",
+        help="内部参数：仅在活动总览或明确个性化推荐场景复用本地手机号",
     )
     parser.add_argument(
         "--clear-mobile",

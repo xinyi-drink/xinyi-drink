@@ -1,7 +1,13 @@
 {
   "name": "xinyi-drink",
   "display_name": "新一好喝咖啡茶饮Skill",
-  "description": "领取新一好喝Skill用户大礼包，查询门店和商品，并结合天气与可选订单历史推荐饮品。",
+  "description": "领取Skill用户大礼包；查询及分析个人历史订单；查询菜单及饮品热量；查询门店及等候时长。",
+  "post_install_prompts": [
+    "领取Skill用户大礼包",
+    "查询及分析个人历史订单",
+    "查询菜单及饮品热量",
+    "查询门店及等候时长"
+  ],
   "version": "1.1.4",
   "author": "Xinyi",
   "license": "MIT",
@@ -36,7 +42,10 @@
     "饮品推荐",
     "门店查询",
     "菜单",
-    "订单历史"
+    "订单历史",
+    "全部订单",
+    "正在进行中订单",
+    "购买记录"
   ],
   "runtime": {
     "type": "python-scripts",
@@ -44,6 +53,7 @@
     "entrypoints": [
       "scripts/claim_reward.py",
       "scripts/fetch_stores.py",
+      "scripts/query_orders.py",
       "scripts/recommend_drink.py"
     ]
   },
@@ -64,7 +74,7 @@
       "name": "claim_reward",
       "display_name": "领取Skill用户大礼包",
       "script": "scripts/claim_reward.py",
-      "description": "按用户提供的手机号查询小程序账号并领取Skill用户大礼包。用户问“帮我领取新一Skill福利”“大礼包怎么领取”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态和轻量饮品建议。只有用户明确问门店时，才另行查询门店。",
+      "description": "按用户提供的手机号查询小程序账号并领取Skill用户大礼包。用户问“帮我领取新一Skill福利”“大礼包怎么领取”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态和轻量饮品建议。当前会话已确认领取成功后，不能更换手机号重复领取；后端按3个月活动周期限制同一IP只允许一个手机号领取，并限制同一IP 10分钟内的领取尝试次数。只有用户明确问门店时，才另行查询门店。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -102,20 +112,58 @@
       }
     },
     {
-      "name": "recommend_drink",
-      "display_name": "推荐饮品与查询菜单",
-      "script": "scripts/recommend_drink.py",
-      "description": "获取商品、天气和可选订单历史，整理成可供 Agent 生成推荐回答的上下文。用户问“给我推荐一杯适合当下午茶的饮品”“某某饮品热量多少”“有哪些不太甜的果茶”“我买过多少杯”“帮我分析我的口味偏好”“有什么活动”时使用。默认不读取本地缓存手机号，也不聚合门店；只有活动总览、订单摘要或口味偏好分析等明确个性化场景才使用内部 useSavedMobile。",
+      "name": "query_orders",
+      "display_name": "查询用户订单",
+      "script": "scripts/query_orders.py",
+      "description": "按用户提供或已保存的手机号查询用户订单，覆盖全部订单、历史订单/已完成订单、正在进行中订单。只要用户在问自己的个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录，都使用本工具；不要求出现“订单”两个字。典型问法包括“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“看我的历史订单”“帮我分析我的口味偏好”。咖啡/饮品统计只是基于订单数据的回答方式，不是触发前提。订单信息必须以接口返回为准，不能预估、估算或模糊处理。订单评级由脚本按接口返回杯数计算。",
       "inputSchema": {
         "type": "object",
         "properties": {
           "mobile": {
             "type": "string",
-            "description": "可选；用于个性化推荐和订单摘要"
+            "description": "可选；用户在【新一咖啡】微信小程序绑定的手机号"
           },
           "useSavedMobile": {
             "type": "boolean",
-            "description": "内部选项；仅活动总览、订单摘要或口味偏好分析等明确个性化场景复用本地手机号，普通推荐不要使用"
+            "description": "内部选项；仅订单摘要或口味偏好分析等明确个性化场景复用本地手机号"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              2,
+              4
+            ],
+            "description": "可选订单状态分组；不传查询全部订单，2=正在进行中订单，4=历史订单/已完成订单"
+          },
+          "query": {
+            "type": "string",
+            "description": "用户原始订单问题"
+          }
+        },
+        "required": []
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "recommend_drink",
+      "display_name": "查询菜单及饮品热量",
+      "script": "scripts/recommend_drink.py",
+      "description": "获取商品、天气和可选订单历史，整理成可供 Agent 查询菜单、饮品热量和推荐尝试的上下文。用户问“某某饮品热量多少”“有哪些不太甜的果茶”“有什么活动”时使用；个性化推荐时把常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品。用户问个人订单、购买记录、喝过/买过/点过什么、取餐或制作状态时改用 query_orders。默认不读取本地缓存手机号，也不聚合门店；只有活动总览等明确个性化场景才使用内部 useSavedMobile。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "description": "可选；用于个性化推荐"
+          },
+          "useSavedMobile": {
+            "type": "boolean",
+            "description": "内部选项；仅活动总览或明确个性化推荐场景复用本地手机号，普通推荐不要使用"
           },
           "query": {
             "type": "string",
@@ -149,7 +197,7 @@
         "sends": [
           "mobile"
         ],
-        "purpose": "查询并领取Skill用户大礼包"
+        "purpose": "查询并领取Skill用户大礼包；服务端读取请求IP做3个月活动周期风控和10分钟尝试频率限制"
       },
       {
         "method": "GET",
@@ -158,6 +206,15 @@
           "optional mobile query"
         ],
         "purpose": "获取商品、天气和可选订单摘要"
+      },
+      {
+        "method": "GET",
+        "path": "/skill/xinyi/orders",
+        "sends": [
+          "mobile query",
+          "optional status query"
+        ],
+        "purpose": "查询用户订单，覆盖全部订单、历史订单/已完成订单和正在进行中订单"
       },
       {
         "method": "GET",
@@ -175,7 +232,7 @@
       "updatedAt"
     ],
     "permissions": "0600 when supported",
-    "autoReadPolicy": "recommend_drink 默认不读取缓存手机号；仅内部 --use-saved-mobile 个性化场景读取"
+    "autoReadPolicy": "recommend_drink 默认不读取缓存手机号；query_orders 仅订单/偏好分析场景读取；内部 --use-saved-mobile 才读取"
   },
   "environment": [
     "XINYI_API_BASE_URL",
@@ -183,7 +240,7 @@
     "XINYI_DRINK_STATE_FILE"
   ],
   "brand_prompt": {
-    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡的店员姐姐，熟门店、懂口味，会认真帮用户挑选，松弛有温度；信息有层次但不要报告腔。只有用户问活动、福利或领取且未提供手机号时，才请用户发送微信小程序【新一咖啡】绑定手机号；查询确认未注册或未登录时，再说明Skill用户大礼包内容、活动规则和两步领取方法，不要回答成没有其他活动。用户不是在问活动、福利或领取时，即使已参与，也不要向最终回答暴露活动状态，不要主动提身份验证、礼包到账或领取。活动参与成功、用户查询已参与或领取成功时，必须展示接口返回明细，包括成功/失败数量、券发放 message、实际券名和数量。",
+    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡的店员姐姐，熟门店、懂口味，会认真帮用户挑选，松弛有温度；信息有层次但不要报告腔。个性化推荐时把用户常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品，不要默认推荐用户最常点的饮品。当前会话已确认领取成功后，不能更换手机号重复领取；后端按3个月活动周期限制同一IP只允许一个手机号领取，并限制同一IP 10分钟内的领取尝试次数。只有用户问活动、福利或领取且未提供手机号时，才请用户发送微信小程序【新一咖啡】绑定手机号；查询确认未注册或未登录时，再说明Skill用户大礼包内容、活动规则和两步领取方法，不要回答成没有其他活动。用户不是在问活动、福利或领取时，即使已参与，也不要向最终回答暴露活动状态，不要主动提身份验证、礼包到账或领取。活动参与成功、用户查询已参与或领取成功时，必须展示接口返回明细，包括成功/失败数量、券发放 message、实际券名和数量。",
     "tone": {
       "personality": "warm_practical_honest",
       "avoid": [

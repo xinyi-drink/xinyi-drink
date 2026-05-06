@@ -261,6 +261,92 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.mark_activity_joined_mock.assert_not_called()
 
     @patch.object(recommend_drink, "post_json", create=True)
+    @patch.object(recommend_drink, "save_mobile", create=True)
+    @patch.object(recommend_drink, "load_mobile", return_value=None)
+    @patch.object(
+        recommend_drink,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(recommend_drink, "fetch_json")
+    def test_personalized_recommendation_suggests_less_ordered_similar_drink(
+        self,
+        fetch_json_mock,
+        _load_config_mock,
+        _load_mobile_mock,
+        save_mobile_mock,
+        post_json_mock,
+    ) -> None:
+        self.load_activity_joined_mock.return_value = True
+        fetch_json_mock.return_value = {
+            "data": {
+                "goods": [
+                    {
+                        "name": "苦尽甘来拿铁",
+                        "categories": ["咖啡", "拿铁"],
+                        "price": "18.80",
+                        "temperatures": ["热", "少冰"],
+                        "sugarLevels": ["无糖", "3分糖"],
+                        "ingredients": ["咖啡", "牛奶"],
+                    },
+                    {
+                        "name": "桂花燕麦拿铁",
+                        "categories": ["咖啡", "拿铁"],
+                        "price": "19.80",
+                        "temperatures": ["热", "少冰"],
+                        "sugarLevels": ["3分糖", "5分糖"],
+                        "ingredients": ["咖啡", "燕麦奶", "桂花"],
+                    },
+                    {
+                        "name": "柠檬毛尖",
+                        "categories": ["果茶"],
+                        "price": "15.80",
+                        "temperatures": ["少冰"],
+                        "sugarLevels": ["5分糖"],
+                        "ingredients": ["柠檬", "毛尖茶"],
+                    },
+                ],
+                "stores": [],
+                "weather": {"city": "Beijing", "condition": "sunny", "temperatureC": 18},
+                "orders": {
+                    "orders": [
+                        {"goods": [{"name": "苦尽甘来拿铁", "num": 2}]},
+                        {"goods": [{"name": "苦尽甘来拿铁", "num": 1}]},
+                    ]
+                },
+            }
+        }
+
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "recommend_drink.py",
+                "--mobile",
+                "15712459595",
+                "--query",
+                "推荐尝试一些我不常点的饮品",
+            ],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("推荐候选饮品：桂花燕麦拿铁", output)
+        self.assertIn("推荐尝试方向：优先推荐口味相邻但不常点或未点过的饮品", output)
+        self.assertIn("常点参考：苦尽甘来拿铁（3次）", output)
+        self.assertIn("这杯在可见订单里没有出现，适合做新尝试", output)
+        self.assertNotIn("推荐候选饮品：苦尽甘来拿铁", output)
+        save_mobile_mock.assert_not_called()
+        post_json_mock.assert_not_called()
+
+    @patch.object(recommend_drink, "post_json", create=True)
     @patch.object(recommend_drink, "load_mobile", return_value="15712459595")
     @patch.object(
         recommend_drink,

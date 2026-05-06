@@ -122,17 +122,15 @@ find "$DEST" -name '.DS_Store' -delete
 cat <<EOF
 已安装 $SKILL_NAME 到 $DEST
 
-安装完成后，你可以在新会话中这样使用：
-  /xinyi-drink 给我推荐一杯适合当下午茶的饮品。
-
-如果当前平台支持自然触发，也可以直接问：
-  某某饮品热量多少？
-  新一咖啡有哪些门店？
-  望京店目前有多少杯待做，等待时间多久？
+安装完成后，推荐固定展示这四个问题：
+  领取Skill用户大礼包
+  查询及分析个人历史订单
+  查询菜单及饮品热量
+  查询门店及等候时长
 
 隐私提示：
   - 普通推荐、门店和菜单查询不会自动复用缓存手机号。
-  - 参与活动、查询活动状态、活动总览、订单摘要或口味偏好分析时，手机号会发送到配置的后端；默认后端见 config/defaults.json。
+  - 参与活动、查询活动状态、活动总览、订单查询或口味偏好分析时，手机号会发送到配置的后端；订单查询走专用订单接口；默认后端见 config/defaults.json。
   - 可通过 XINYI_API_BASE_URL 指向你信任的后端。
   - 本地手机号状态默认保存到 ~/.xinyi-drink/state.json。
   - 清空缓存可运行：python3 "$DEST/scripts/recommend_drink.py" --clear-mobile

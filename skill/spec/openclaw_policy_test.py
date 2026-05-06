@@ -6,6 +6,13 @@ from pathlib import Path
 
 
 class OpenClawPolicyTest(unittest.TestCase):
+    MAIN_USE_CASES = [
+        "领取Skill用户大礼包",
+        "查询及分析个人历史订单",
+        "查询菜单及饮品热量",
+        "查询门店及等候时长",
+    ]
+
     def test_skill_md_frontmatter_declares_openclaw_runtime_metadata(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
@@ -23,6 +30,9 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("type: local-script", frontmatter)
         self.assertIn("script: install.sh", frontmatter)
         self.assertIn("dryRun: install.sh --dry-run", frontmatter)
+        self.assertIn("postInstallPrompts:", frontmatter)
+        for use_case in self.MAIN_USE_CASES:
+            self.assertIn(use_case, frontmatter)
         self.assertIn("type: python-scripts", frontmatter)
         self.assertIn("requiredEnv: []", frontmatter)
         self.assertIn("optionalEnv:", frontmatter)
@@ -48,7 +58,12 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("帮我领取新一Skill福利", skill_md)
         self.assertIn("望京店目前有多少杯待做，等待时间多久", skill_md)
         self.assertIn("某某饮品热量多少", skill_md)
-        self.assertIn("给我推荐一杯适合当下午茶的饮品", skill_md)
+        self.assertIn("个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录", skill_md)
+        for use_case in self.MAIN_USE_CASES:
+            self.assertIn(use_case, skill_md)
+        self.assertIn("不要求用户说出“订单”两个字", skill_md)
+        self.assertIn("订单信息必须以接口返回为准，不能预估、估算或模糊处理", skill_md)
+        self.assertIn("订单评级由脚本按接口返回杯数计算", skill_md)
         self.assertIn("实时接口失败", skill_md)
         self.assertNotIn("如果你在附近", skill_md)
 
@@ -58,6 +73,9 @@ class OpenClawPolicyTest(unittest.TestCase):
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
 
         self.assertEqual(payload["name"], "xinyi-drink")
+        self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
+        for use_case in self.MAIN_USE_CASES:
+            self.assertIn(use_case, payload["description"])
         self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")
@@ -72,6 +90,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertTrue(payload["runtime"]["requires_network"])
         self.assertIn("scripts/claim_reward.py", payload["runtime"]["entrypoints"])
         self.assertIn("scripts/fetch_stores.py", payload["runtime"]["entrypoints"])
+        self.assertIn("scripts/query_orders.py", payload["runtime"]["entrypoints"])
         self.assertIn("scripts/recommend_drink.py", payload["runtime"]["entrypoints"])
 
         endpoint_paths = {
@@ -83,6 +102,7 @@ class OpenClawPolicyTest(unittest.TestCase):
             {
                 "/skill/xinyi/claim",
                 "/skill/xinyi/context",
+                "/skill/xinyi/orders",
                 "/skill/xinyi/stores",
             },
         )
@@ -107,13 +127,27 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("用户问“帮我领取新一Skill福利”", tool_descriptions["claim_reward"])
         self.assertIn("用户问“新一咖啡有哪些门店”", tool_descriptions["fetch_stores"])
         self.assertIn("望京店目前有多少杯待做", tool_descriptions["fetch_stores"])
-        self.assertIn("给我推荐一杯适合当下午茶的饮品", tool_descriptions["recommend_drink"])
         self.assertIn("默认不读取本地缓存手机号", tool_descriptions["recommend_drink"])
         self.assertIn("useSavedMobile", tool_descriptions["recommend_drink"])
         self.assertIn("某某饮品热量多少", tool_descriptions["recommend_drink"])
         self.assertIn("有哪些不太甜的果茶", tool_descriptions["recommend_drink"])
-        self.assertIn("我买过多少杯", tool_descriptions["recommend_drink"])
-        self.assertIn("帮我分析我的口味偏好", tool_descriptions["recommend_drink"])
+        self.assertIn("我买过多少杯", tool_descriptions["query_orders"])
+        self.assertIn("我都定了哪些饮料", tool_descriptions["query_orders"])
+        self.assertIn("我喝了多少咖啡", tool_descriptions["query_orders"])
+        self.assertIn("全部订单", tool_descriptions["query_orders"])
+        self.assertIn("历史订单", tool_descriptions["query_orders"])
+        self.assertIn("正在进行中订单", tool_descriptions["query_orders"])
+        self.assertIn("不要求出现“订单”", tool_descriptions["query_orders"])
+        self.assertIn("帮我分析我的口味偏好", tool_descriptions["query_orders"])
+        self.assertIn("咖啡/饮品统计只是基于订单数据的回答方式", tool_descriptions["query_orders"])
+        self.assertIn("不能预估、估算或模糊处理", tool_descriptions["query_orders"])
+        self.assertIn("订单评级由脚本按接口返回杯数计算", tool_descriptions["query_orders"])
+        query_orders_schema = next(
+            tool["inputSchema"]
+            for tool in payload["tools"]
+            if tool["name"] == "query_orders"
+        )
+        self.assertIn("不传查询全部订单", query_orders_schema["properties"]["status"]["description"])
         recommend_schema = next(
             tool["inputSchema"]
             for tool in payload["tools"]
@@ -145,9 +179,10 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("https://ai.xinyicoffee.com/api", readme)
         self.assertIn("POST /skill/xinyi/claim", readme)
         self.assertIn("GET /skill/xinyi/context", readme)
+        self.assertIn("GET /skill/xinyi/orders", readme)
         self.assertIn("手机号会作为请求数据发送到后端", readme)
         self.assertIn("普通推荐、门店和菜单查询不会自动复用缓存手机号", readme)
-        self.assertIn("活动总览、订单/偏好分析场景复用缓存", readme)
+        self.assertIn("订单摘要和口味偏好分析走专用订单接口", readme)
         self.assertIn("不是 instruction-only", readme)
 
     def test_user_facing_capability_examples_are_specific(self) -> None:
@@ -155,20 +190,12 @@ class OpenClawPolicyTest(unittest.TestCase):
         readme = (repo_root / "README.md").read_text(encoding="utf-8")
         intro_section = readme.split("## Skill用户大礼包", 1)[0]
 
-        self.assertIn("高质量问法", intro_section)
+        self.assertIn("固定推荐问题", intro_section)
         self.assertNotIn("数据来源", intro_section)
         self.assertNotIn("/skill/xinyi/", intro_section)
-        for example in (
-            "帮我领取新一Skill福利。",
-            "我买过多少杯？",
-            "帮我分析我的口味偏好。",
-            "新一咖啡有哪些门店？",
-            "望京店目前有多少杯待做，等待时间多久？",
-            "某某饮品热量多少？",
-            "有哪些不太甜的果茶？",
-            "给我推荐一杯适合当下午茶的饮品。",
-        ):
+        for example in self.MAIN_USE_CASES:
             self.assertIn(example, intro_section)
+        self.assertNotIn("给我推荐一杯适合当下午茶的饮品", intro_section)
 
 
 if __name__ == "__main__":

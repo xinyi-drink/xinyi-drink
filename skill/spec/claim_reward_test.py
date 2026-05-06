@@ -15,12 +15,15 @@ from skill_http import SkillHttpError
 class ClaimRewardScriptTest(unittest.TestCase):
     def setUp(self) -> None:
         self.load_activity_joined_patcher = patch.object(claim_reward, "load_activity_joined", return_value=None)
+        self.load_mobile_patcher = patch.object(claim_reward, "load_mobile", return_value=None, create=True)
         self.mark_activity_joined_patcher = patch.object(claim_reward, "mark_activity_joined")
         self.mark_activity_not_joined_patcher = patch.object(claim_reward, "mark_activity_not_joined")
         self.load_activity_joined_mock = self.load_activity_joined_patcher.start()
+        self.load_mobile_mock = self.load_mobile_patcher.start()
         self.mark_activity_joined_mock = self.mark_activity_joined_patcher.start()
         self.mark_activity_not_joined_mock = self.mark_activity_not_joined_patcher.start()
         self.addCleanup(self.load_activity_joined_patcher.stop)
+        self.addCleanup(self.load_mobile_patcher.stop)
         self.addCleanup(self.mark_activity_joined_patcher.stop)
         self.addCleanup(self.mark_activity_not_joined_patcher.stop)
 
@@ -52,6 +55,77 @@ class ClaimRewardScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
         self.assertIn("领取活动失败：网络请求失败", stdout.getvalue())
+        save_mobile_mock.assert_not_called()
+        self.mark_activity_joined_mock.assert_not_called()
+        self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(claim_reward, "save_mobile", create=True)
+    @patch.object(claim_reward, "post_json")
+    def test_claim_script_rejects_new_mobile_after_current_session_claimed(
+        self,
+        post_json_mock,
+        save_mobile_mock,
+    ) -> None:
+        self.load_mobile_mock.return_value = "15712459595"
+
+        def load_activity_joined(mobile: str | None) -> bool | None:
+            return mobile == "15712459595"
+
+        self.load_activity_joined_mock.side_effect = load_activity_joined
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "18210234223"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("当前会话已使用手机号 157****9595 领取过 Skill用户大礼包", output)
+        self.assertIn("不能更换手机号重复领取", output)
+        post_json_mock.assert_not_called()
+        save_mobile_mock.assert_not_called()
+        self.mark_activity_joined_mock.assert_not_called()
+        self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(claim_reward, "save_mobile", create=True)
+    @patch.object(
+        claim_reward,
+        "load_config",
+        return_value={
+            "apiBaseUrl": "http://127.0.0.1:8020",
+            "timeoutSeconds": 5,
+        },
+    )
+    @patch.object(claim_reward, "post_json")
+    def test_claim_script_renders_ip_restriction_as_claim_failure(
+        self,
+        post_json_mock,
+        _load_config_mock,
+        save_mobile_mock,
+    ) -> None:
+        post_json_mock.return_value = {
+            "code": 600,
+            "message": "当前网络环境已领取过本活动，请勿更换手机号重复领取。",
+            "error": {"details": {"kind": "ip_already_claimed"}},
+        }
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "18210234223"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("领取活动失败：当前网络环境已领取过本活动，请勿更换手机号重复领取。", output)
+        self.assertNotIn("领取结果：处理完成", output)
         save_mobile_mock.assert_not_called()
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_not_called()
