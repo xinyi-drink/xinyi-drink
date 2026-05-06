@@ -61,10 +61,10 @@ def request_json(request: urllib.request.Request, timeout: int) -> dict:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
             if not isinstance(payload, dict):
-                raise SkillHttpError("接口返回格式不是 JSON 对象")
+                raise SkillHttpError("服务返回格式不是 JSON 对象")
             return payload
     except urllib.error.HTTPError as exc:
-        raise SkillHttpError(f"接口返回 HTTP {exc.code}") from exc
+        raise SkillHttpError(f"服务暂时返回 HTTP {exc.code}") from exc
     except urllib.error.URLError as exc:
         raise SkillHttpError(f"网络请求失败：{exc.reason}") from exc
     except TimeoutError as exc:
@@ -72,7 +72,7 @@ def request_json(request: urllib.request.Request, timeout: int) -> dict:
     except OSError as exc:
         raise SkillHttpError(f"网络请求失败：{exc}") from exc
     except json.JSONDecodeError as exc:
-        raise SkillHttpError("接口返回了无法解析的 JSON") from exc
+        raise SkillHttpError("服务返回了无法解析的 JSON") from exc
     except Exception as exc:
         if isinstance(exc, SkillHttpError):
             raise

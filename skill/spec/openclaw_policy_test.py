@@ -13,7 +13,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         "查询门店及等候时长",
     ]
 
-    def test_skill_md_frontmatter_stays_codex_compatible_and_compact(self) -> None:
+    def test_skill_md_frontmatter_declares_openclaw_metadata(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
 
@@ -22,22 +22,36 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("description: >-", frontmatter)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, frontmatter)
-        self.assertLessEqual(len(frontmatter), 1024)
-        self.assertNotIn("version:", frontmatter)
-        self.assertNotIn("keywords:", frontmatter)
-        self.assertNotIn("metadata:", frontmatter)
-        self.assertNotIn("openclaw:", frontmatter)
-        self.assertNotIn("runtime:", frontmatter)
-        self.assertNotIn("network:", frontmatter)
-        self.assertNotIn("localStorage:", frontmatter)
+        for keyword in ("新一好喝", "新一咖啡", "Skill用户大礼包", "今天喝什么", "订单", "购买记录"):
+            self.assertIn(f"  - {keyword}", frontmatter)
+        self.assertIn("metadata:", frontmatter)
+        self.assertIn("openclaw:", frontmatter)
+        self.assertIn("packageType: executable-skill", frontmatter)
+        self.assertIn("instructionOnly: false", frontmatter)
+        self.assertIn("dataClassification: optional-phone-number", frontmatter)
+        self.assertIn('privacyReviewed: "2026-04-28"', frontmatter)
+        self.assertIn("homepage: https://github.com/xinyi-drink/xinyi-drink", frontmatter)
+        self.assertIn("runtime:", frontmatter)
+        self.assertIn("requiresNetwork: true", frontmatter)
+        self.assertIn("installSpec:", frontmatter)
+        self.assertIn("sourceDirectory: skill", frontmatter)
+        self.assertIn("network:", frontmatter)
+        self.assertIn("defaultApiBaseUrl: https://ai.xinyicoffee.com/api", frontmatter)
+        self.assertIn("localStorage:", frontmatter)
+        self.assertIn("defaultPath: ~/.xinyi-drink/state.json", frontmatter)
+        self.assertIn("contents: [mobile, activityJoined, updatedAt]", frontmatter)
+        self.assertIn("permissions: \"0600 when supported\"", frontmatter)
+        self.assertIn("clearCommand: python3 scripts/recommend_drink.py --clear-mobile", frontmatter)
+        self.assertIn("sharedMachineWarning: true", frontmatter)
+        self.assertIn("version: 1.1.9", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
         body = skill_md.split("---", 2)[2]
 
-        self.assertLessEqual(len(body.splitlines()), 130)
-        for heading in ("## AI 必读", "## 触发表", "## 主流程", "## 盲区应对", "## 内嵌示例"):
+        self.assertLessEqual(len(body.splitlines()), 145)
+        for heading in ("## AI 必读", "## 隐私与手机号使用", "## 触发表", "## 主流程", "## 盲区应对", "## 内嵌示例"):
             self.assertIn(heading, skill_md)
         self.assertIn("懂茶饮也懂咖啡的店员姐姐", skill_md)
         self.assertIn("今天这个温度喝它刚好", skill_md)
@@ -48,8 +62,16 @@ class OpenClawPolicyTest(unittest.TestCase):
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, skill_md)
         self.assertIn("不要求用户说出“订单”两个字", skill_md)
-        self.assertIn("订单信息必须以接口返回为准，不能预估、估算或模糊处理", skill_md)
-        self.assertIn("订单评级由脚本按接口返回杯数计算", skill_md)
+        self.assertIn("订单信息只能基于本次查询结果，不能预估、估算或模糊处理", skill_md)
+        self.assertIn("订单等级由脚本按本次查询到的杯数计算", skill_md)
+        self.assertIn("最终回答必须展示脚本给出的等级句", skill_md)
+        self.assertIn("手机号会保存到本机 `~/.xinyi-drink/state.json`", skill_md)
+        self.assertIn("活动状态查询、订单查询、活动总览、口味偏好分析或明确个性化推荐可以复用本机缓存手机号", skill_md)
+        self.assertIn("普通推荐、门店和菜单查询不要复用缓存手机号", skill_md)
+        self.assertIn("手机号会发送到配置的后端", skill_md)
+        self.assertIn("只使用用户自己的手机号", skill_md)
+        self.assertIn("python3 scripts/recommend_drink.py --clear-mobile", skill_md)
+        self.assertIn("不要输出发放统计明细等技术化表述", skill_md)
         self.assertIn("实时接口失败", skill_md)
         self.assertNotIn("如果你在附近", skill_md)
 
@@ -62,8 +84,8 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn('"version": "1.1.4"', json.dumps(payload, ensure_ascii=False))
-        self.assertNotIn(f"version: {payload['version']}", skill_md)
+        self.assertIn('"version": "1.1.9"', json.dumps(payload, ensure_ascii=False))
+        self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["source"]["type"], "git")
@@ -73,6 +95,11 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["install"]["script"], "install.sh")
         self.assertEqual(payload["install"]["dry_run"], "install.sh --dry-run")
         self.assertIn("~/.openclaw/skills/xinyi-drink", payload["install"]["writes_to"])
+        self.assertEqual(payload["install_spec"]["package_type"], "executable-skill")
+        self.assertFalse(payload["install_spec"]["instruction_only"])
+        self.assertEqual(payload["install_spec"]["source_directory"], "skill")
+        self.assertEqual(payload["install_spec"]["install"]["script"], "install.sh")
+        self.assertEqual(payload["openclaw"]["installSpec"]["script"], "install.sh")
         self.assertEqual(payload["runtime"]["type"], "python-scripts")
         self.assertTrue(payload["runtime"]["requires_network"])
         self.assertIn("scripts/claim_reward.py", payload["runtime"]["entrypoints"])
@@ -100,15 +127,24 @@ class OpenClawPolicyTest(unittest.TestCase):
         )
         self.assertIn("mobile", claim_endpoint["sends"])
         self.assertEqual(payload["localStorage"]["defaultPath"], "~/.xinyi-drink/state.json")
+        self.assertEqual(payload["localStorage"]["clearCommand"], "python3 scripts/recommend_drink.py --clear-mobile")
+        self.assertTrue(payload["localStorage"]["sharedMachineWarning"])
         self.assertEqual(payload["openclaw"]["packageType"], "executable-skill")
         self.assertFalse(payload["openclaw"]["instructionOnly"])
+        self.assertEqual(payload["privacy"]["data_subject"], "user-provided-or-saved-mobile-owner")
+        self.assertIn("only-use-your-own-phone-number", payload["privacy"]["user_guidance"])
+        self.assertIn("clear-cache-on-shared-machines", payload["privacy"]["user_guidance"])
 
         keywords = set(payload["keywords"])
-        for keyword in ("今天喝什么", "困了", "下午茶", "上班犯困", "提神", "清爽", "热量", "果茶", "等待时长", "饮品偏好"):
+        for keyword in ("今天喝什么", "困了", "下午茶", "上班犯困", "提神", "门店", "订单", "清爽", "热量", "果茶", "等待时长", "饮品偏好"):
             self.assertIn(keyword, keywords)
 
         tool_descriptions = {
             tool["name"]: tool["description"]
+            for tool in payload["tools"]
+        }
+        tool_annotations = {
+            tool["name"]: tool["annotations"]
             for tool in payload["tools"]
         }
         tool_display_names = {
@@ -133,7 +169,15 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("帮我分析我的口味偏好", tool_descriptions["query_orders"])
         self.assertIn("咖啡/饮品统计只是基于订单数据的回答方式", tool_descriptions["query_orders"])
         self.assertIn("不能预估、估算或模糊处理", tool_descriptions["query_orders"])
-        self.assertIn("订单评级由脚本按接口返回杯数计算", tool_descriptions["query_orders"])
+        self.assertIn("订单等级由脚本按本次查询到的杯数计算", tool_descriptions["query_orders"])
+        self.assertIn("最终回答必须展示脚本给出的等级句", tool_descriptions["query_orders"])
+        self.assertIn("不要输出发放统计明细等技术化表述", tool_descriptions["claim_reward"])
+        self.assertTrue(tool_annotations["claim_reward"]["requiresExplicitUserIntent"])
+        self.assertTrue(tool_annotations["claim_reward"]["stateChanging"])
+        self.assertEqual(tool_annotations["claim_reward"]["personalData"], ["mobile"])
+        self.assertTrue(tool_annotations["query_orders"]["requiresExplicitUserIntent"])
+        self.assertTrue(tool_annotations["query_orders"]["requiresUserOwnedPhone"])
+        self.assertEqual(tool_annotations["query_orders"]["personalData"], ["mobile", "order_history"])
         claim_reward_schema = next(
             tool["inputSchema"]
             for tool in payload["tools"]
@@ -172,9 +216,8 @@ class OpenClawPolicyTest(unittest.TestCase):
 
         self.assertIn("Skill用户大礼包", readme)
         self.assertIn("skill/SKILL.md", readme)
-        self.assertIn("SKILL.md frontmatter 只保留 name 和 description", readme)
+        self.assertIn("frontmatter 同时保留 Agent 触发用的 `name/description` 和 OpenClaw/ClawHub 审查用的 `keywords/metadata/version`", readme)
         self.assertIn("skill/skill.json", readme)
-        self.assertNotIn("metadata.openclaw", readme)
         self.assertNotIn("发布前两处版本号需要保持一致", readme)
         self.assertIn("默认后端", readme)
         self.assertIn("https://ai.xinyicoffee.com/api", readme)
@@ -185,6 +228,19 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("普通推荐、门店和菜单查询不会自动复用缓存手机号", readme)
         self.assertIn("订单摘要和口味偏好分析走专用订单接口", readme)
         self.assertIn("不是 instruction-only", readme)
+        self.assertIn("Registry install spec", readme)
+        self.assertIn("只使用本人手机号", readme)
+        self.assertIn("共享机器或共享 Agent profile", readme)
+
+    def test_privacy_reference_addresses_static_scan_concerns(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+        privacy = (skill_root / "references" / "privacy-boundaries.md").read_text(encoding="utf-8")
+
+        self.assertIn("只使用本人手机号", privacy)
+        self.assertIn("共享机器或共享 Agent profile", privacy)
+        self.assertIn("订单查询必须由用户明确询问个人订单、购买记录、饮品历史、取餐或口味偏好分析触发", privacy)
+        self.assertIn("本 Skill 客户端不采集密码、短信验证码、OAuth token 或 Cookie", privacy)
+        self.assertIn("服务端仍应负责账号归属和订单访问控制", privacy)
 
     def test_user_facing_capability_examples_are_specific(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]

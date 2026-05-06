@@ -99,14 +99,14 @@ class QueryOrdersScriptTest(unittest.TestCase):
         self.assertIn("当前可见订单数：2单。", output)
         self.assertIn("已完成订单数：1单。", output)
         self.assertIn("可见饮品杯数：3杯。", output)
-        self.assertIn("## 订单评级", output)
-        self.assertIn("Level 2", output)
+        self.assertIn("## 给用户的订单等级", output)
+        self.assertIn("Level 2：你已经在新一咖啡点单3杯，我们越来越有默契了！", output)
         self.assertIn("你已经在新一咖啡点单3杯，我们越来越有默契了！", output)
         self.assertIn("买过的饮品：苦尽甘来拿铁、花魁毛尖、桂花美式。", output)
         self.assertIn("可确认咖啡相关杯数：1杯。", output)
         self.assertIn("混合订单里还有无法精确计杯的咖啡相关饮品：苦尽甘来拿铁。", output)
         self.assertIn("咖啡相关饮品：2项（按商品名初步识别）：苦尽甘来拿铁、桂花美式。", output)
-        self.assertIn("订单信息必须以接口返回为准，不能预估、估算或模糊处理。", output)
+        self.assertIn("订单信息只能基于本次查询到的订单字段，不能预估、估算或模糊处理。", output)
         self.assertNotIn("/skill/xinyi/context", output)
         self.assertEqual(
             fetch_json_mock.call_args.args,
@@ -141,6 +141,31 @@ class QueryOrdersScriptTest(unittest.TestCase):
 
     def test_zero_cups_do_not_output_order_rating(self) -> None:
         self.assertEqual(query_orders.build_order_rating_lines(0), [])
+
+    def test_render_orders_result_prominently_outputs_level_three_for_nine_cups(self) -> None:
+        output = query_orders.render_orders_result(
+            {
+                "orders": [
+                    {
+                        "createdAt": "2026-05-06 12:00:00",
+                        "orderSn": "A001",
+                        "state": 6,
+                        "goodsNum": 5,
+                        "goods": [{"name": "椰椰糯米冰浆", "num": 5}],
+                    },
+                    {
+                        "createdAt": "2026-05-06 13:00:00",
+                        "orderSn": "A002",
+                        "state": 6,
+                        "goodsNum": 4,
+                        "goods": [{"name": "芒芒糯米冰浆", "num": 4}],
+                    },
+                ]
+            }
+        )
+
+        self.assertIn("## 给用户的订单等级", output)
+        self.assertIn("Level 3：你已经在新一咖啡点单9杯，你一定是新一咖啡的忠实铁粉吧！", output)
 
     def test_english_coffee_keywords_are_shared_with_preference_tags(self) -> None:
         self.assertTrue(query_orders.is_coffee_name("Espresso Tonic"))
@@ -224,7 +249,7 @@ class QueryOrdersScriptTest(unittest.TestCase):
         _load_config_mock,
         _load_mobile_mock,
     ) -> None:
-        fetch_json_mock.side_effect = SkillHttpError("接口返回 HTTP 500")
+        fetch_json_mock.side_effect = SkillHttpError("服务暂时返回 HTTP 500")
         stdout = io.StringIO()
 
         with patch.object(
@@ -235,7 +260,7 @@ class QueryOrdersScriptTest(unittest.TestCase):
             exit_code = query_orders.main()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("订单历史暂时没拿到：接口返回 HTTP 500", stdout.getvalue())
+        self.assertIn("订单历史暂时没拿到：服务暂时返回 HTTP 500", stdout.getvalue())
         self.assertIn("不要猜用户下过几单", stdout.getvalue())
 
 

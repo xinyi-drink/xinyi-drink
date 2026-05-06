@@ -154,8 +154,8 @@ def build_order_summary_lines(orders_data: dict[str, Any]) -> list[str]:
     else:
         lines.append("当前没识别到咖啡相关饮品；不要据此断言用户一定没喝过咖啡。")
 
-    lines.append("订单信息必须以接口返回为准，不能预估、估算或模糊处理。")
-    lines.append("回答用户时只基于这些订单字段，不要补全接口没返回的订单、杯数或商品。")
+    lines.append("订单信息只能基于本次查询到的订单字段，不能预估、估算或模糊处理。")
+    lines.append("回答用户时不要补全本次结果里没有的订单、杯数或商品。")
     return lines
 
 
@@ -188,7 +188,8 @@ def render_orders_result(orders_data: dict[str, Any]) -> str:
         render_text_section("订单摘要", build_order_summary_lines(orders_data)),
     ]
     if rating_lines:
-        sections.append(render_text_section("订单评级", rating_lines))
+        level, message = rating_lines
+        sections.append(render_text_section("给用户的订单等级", [f"{level}：{message}"]))
     return "\n\n".join(sections)
 
 

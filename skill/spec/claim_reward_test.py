@@ -96,15 +96,15 @@ class ClaimRewardScriptTest(unittest.TestCase):
         },
     )
     @patch.object(claim_reward, "post_json")
-    def test_claim_script_renders_ip_restriction_as_claim_failure(
+    def test_claim_script_renders_app_error_as_claim_failure(
         self,
         post_json_mock,
         _load_config_mock,
     ) -> None:
         post_json_mock.return_value = {
             "code": 600,
-            "message": "当前网络环境已领取过本活动，请勿更换手机号重复领取。",
-            "error": {"details": {"kind": "ip_already_claimed"}},
+            "message": "领取暂时失败，请稍后再试。",
+            "error": {"details": {"kind": "claim_failed"}},
         }
         stdout = io.StringIO()
 
@@ -118,7 +118,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取活动失败：当前网络环境已领取过本活动，请勿更换手机号重复领取。", output)
+        self.assertIn("领取活动失败：领取暂时失败，请稍后再试。", output)
         self.assertNotIn("领取结果：处理完成", output)
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_not_called()
@@ -266,12 +266,9 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("小龙虾贴纸：到任意门店对暗号【小龙虾】领取，先到先得", output)
         self.assertIn("Skill用户专享赠饮券：（前100名）爆款苦尽甘来拿铁免费兑换券 / （101-500名）5折饮品券 / （501-以后）8折饮品券", output)
         self.assertIn("Skill用户身份标识：参与即可添加SKILL 标签、龙虾头像", output)
-        self.assertIn("接口返回明细：", output)
-        self.assertIn("成功1项，失败0项", output)
-        self.assertIn("第1项：发放成功；获得：Skill用户专享赠饮券「（前100名）爆款苦尽甘来拿铁免费兑换券」", output)
-        self.assertIn("数量：1", output)
-        self.assertIn("排名：2", output)
-        self.assertIn("档位：1", output)
+        self.assertIn("到账券：Skill用户专享赠饮券「（前100名）爆款苦尽甘来拿铁免费兑换券」。", output)
+        self.assertNotIn("成功失败数量", output)
+        self.assertNotIn("排名：2", output)
         self.assertIn("你已经领取礼包，现在可以查看你过去的订单信息", output)
         self.assertNotIn("你已完成", output)
         self.assertNotIn("骨灰级粉丝", output)
@@ -378,9 +375,8 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("小龙虾贴纸（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("Skill用户专享赠饮券（具体饮品以小程序卡券为准）", output)
         self.assertIn("Skill用户身份标识", output)
-        self.assertIn("接口返回明细：", output)
-        self.assertIn("成功0项，失败0项", output)
-        self.assertIn("未返回新的券明细；系统识别该手机号已参与/已领取", output)
+        self.assertIn("系统识别该手机号已参与/已领取，本次没有新的券发放。", output)
+        self.assertNotIn("成功失败数量", output)
         self.assertNotIn("您已参与活动啦", output)
         self.assertNotIn("已经领过", output)
         self.assertNotIn("未找到登录用户", output)
@@ -640,9 +636,8 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("小龙虾贴纸（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("Skill用户专享赠饮券「苦尽甘来拿铁」", output)
         self.assertIn("Skill用户身份标识", output)
-        self.assertIn("接口返回明细：", output)
-        self.assertIn("成功1项，失败0项", output)
-        self.assertIn("第1项：发放成功；获得：Skill用户专享赠饮券「苦尽甘来拿铁」", output)
+        self.assertIn("到账券：Skill用户专享赠饮券「苦尽甘来拿铁」。", output)
+        self.assertNotIn("成功失败数量", output)
         self.assertNotIn("您已参与活动啦", output)
         self.assertNotIn("您可以到我们的店领取奖励", output)
         self.assertNotIn("门店信息我给您列全", output)
@@ -749,8 +744,8 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertIn("领取结果：身份验证成功", output)
         self.assertIn("身份验证成功。Skill用户大礼包已发放到账", output)
         self.assertIn("Skill用户专享赠饮券「苦尽甘来拿铁」", output)
-        self.assertIn("接口返回明细：", output)
-        self.assertIn("第1项：发放成功；获得：Skill用户专享赠饮券「苦尽甘来拿铁」", output)
+        self.assertIn("到账券：Skill用户专享赠饮券「苦尽甘来拿铁」。", output)
+        self.assertNotIn("成功失败数量", output)
         self.assertNotIn("推荐您就近前往", output)
         self.assertNotIn("建议您喝", output)
         self.mark_activity_joined_mock.assert_called_once_with("15712459595")

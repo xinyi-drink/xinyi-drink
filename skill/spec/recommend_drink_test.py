@@ -212,7 +212,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         self.assertNotIn("您可以到我们店畅饮", output)
         self.assertNotIn("如果你在附近", output)
         self.assertNotIn("附近可去的门店", output)
-        self.assertNotIn("当前接口返回的门店", output)
+        self.assertNotIn("当前查询到的门店", output)
         self.assertNotIn("目前查到的门店", output)
         self.assertEqual(fetch_json_mock.call_count, 1)
         post_json_mock.assert_not_called()
@@ -865,7 +865,7 @@ class RecommendDrinkScriptTest(unittest.TestCase):
                 "user": {"mobile": "15712459595"},
             }
         }
-        fetch_json_mock.side_effect = SkillHttpError("接口返回 HTTP 500")
+        fetch_json_mock.side_effect = SkillHttpError("服务暂时返回 HTTP 500")
 
         stdout = io.StringIO()
 
@@ -878,8 +878,8 @@ class RecommendDrinkScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("## 实时数据状态", stdout.getvalue())
-        self.assertIn("推荐上下文暂时没拿到：接口返回 HTTP 500", stdout.getvalue())
-        self.assertIn("活动/手机号领取仍以 claim 接口结果为准", stdout.getvalue())
+        self.assertIn("推荐上下文暂时没拿到：服务暂时返回 HTTP 500", stdout.getvalue())
+        self.assertIn("活动/手机号领取仍以领取查询结果为准", stdout.getvalue())
         self.assertIn("门店、菜单、价格、库存和排队信息不要编造", stdout.getvalue())
 
     @patch.object(recommend_drink, "post_json", create=True)

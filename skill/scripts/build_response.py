@@ -80,7 +80,7 @@ def build_realtime_unavailable_lines(scope: str, error: Any) -> list[str]:
     return [
         f"{scope}暂时没拿到：{error}",
         "可以继续回答品牌能力、领取流程或推荐思路，但必须明确这不是实时门店/菜单结果。",
-        "活动/手机号领取仍以 claim 接口结果为准；不要猜用户是否已参加或券是否已到账。",
+        "活动/手机号领取仍以领取查询结果为准；不要猜用户是否已参加或券是否已到账。",
         "门店、菜单、价格、库存和排队信息不要编造；建议稍后重试或打开小程序确认。",
     ]
 
@@ -159,31 +159,24 @@ def format_coupon_reward(coupon_names: list[str]) -> str:
 
 
 def build_claim_detail_lines(data: dict[str, Any], items: list[dict[str, Any]]) -> list[str]:
-    lines = [
-        "接口返回明细：",
-        f"成功{data.get('successCount', 0)}项，失败{data.get('failCount', 0)}项。",
-    ]
-
     if not items:
-        lines.append("未返回新的券明细；系统识别该手机号已参与/已领取。")
-        return lines
+        return ["系统识别该手机号已参与/已领取，本次没有新的券发放。"]
 
+    lines: list[str] = []
     for index, item in enumerate(items, 1):
         message = item.get("message") or ("发放成功" if item.get("state") == 1 else "未发放成功")
-        parts = [f"第{index}项：{message}"]
         coupon = item.get("coupon")
         coupon_name = coupon.get("name") if isinstance(coupon, dict) else None
+        coupon_count = item.get("couponNum")
         if item.get("state") == 1:
-            parts.append(f"获得：{format_coupon_reward([coupon_name] if coupon_name else [])}")
+            coupon_text = format_coupon_reward([coupon_name] if coupon_name else [])
+            if coupon_count and coupon_count != 1:
+                coupon_text = f"{coupon_text} x{coupon_count}"
+            lines.append(f"到账券：{coupon_text}。")
         elif coupon_name:
-            parts.append(f"券名：{coupon_name}")
-        if item.get("couponNum") is not None:
-            parts.append(f"数量：{item.get('couponNum')}")
-        if item.get("rank") is not None:
-            parts.append(f"排名：{item.get('rank')}")
-        if item.get("rankLevel") is not None:
-            parts.append(f"档位：{item.get('rankLevel')}")
-        lines.append("；".join(parts))
+            lines.append(f"{format_coupon_reward([coupon_name])}暂未发放成功：{message}。")
+        else:
+            lines.append(f"券状态：{message}。")
 
     return lines
 
@@ -496,7 +489,7 @@ def render_answer_requirements_section(
 
     if activity_query and context.get("activityJoined"):
         lines.append("登录成功后只提示用户已经领取礼包、现在可以查看过去的订单信息；不要主动展开已完成多少单或购买明细。")
-        lines.append("用户正在问活动/福利/领取，且已参加过活动：可以说明已领取/已到账，并展示接口返回明细；不要要求重新参与或重新留资。")
+        lines.append("用户正在问活动/福利/领取，且已参加过活动：用普通陈述说明已领取/已到账和实际券名；不要写成功失败数量等技术化信息。")
     elif activity_query or not context.get("activityJoined"):
         lines.append(
             f"用户未参加过活动或当前手机号状态未确认，回答末尾可以用分割线 `---` 单独隔开主动留资文案：{LEAD_CAPTURE_COPY} 用户提交手机号后如果仍未注册，再提示：{UNREGISTERED_LOGIN_COPY}"
@@ -523,7 +516,7 @@ def render_answer_requirements_section(
                 "不要只推荐某一家门店，不要写只让用户去某一家店的单店引导；不能只展示第一家或任意一家。",
                 "若展示门店，门店电话也一并给出；如果没有电话字段，再明确说明未提供联系电话。",
                 "若展示门店且门店返回了 facilities，必须明确返回这段设施文案，不要省略。",
-                "当前没有用户定位，门店部分不要说“附近”“就近”或“离你近”，也不要把“接口返回”这种技术口吻说给用户。",
+                "当前没有用户定位，门店部分不要说“附近”“就近”或“离你近”，也不要把技术口吻说给用户。",
                 store_transition_line,
                 "门店名加粗，地址、电话、设施和排队信息用短行呈现。",
             ]

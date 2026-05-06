@@ -8,7 +8,7 @@
     "查询菜单及饮品热量",
     "查询门店及等候时长"
   ],
-  "version": "1.1.4",
+  "version": "1.1.9",
   "author": "Xinyi",
   "license": "MIT",
   "homepage": "https://github.com/xinyi-drink/xinyi-drink",
@@ -31,11 +31,13 @@
     "下午茶",
     "上班犯困",
     "提神",
+    "门店",
     "清爽",
     "低卡",
     "热量",
     "果茶",
     "等待时长",
+    "订单",
     "历史订单",
     "饮品偏好",
     "咖啡",
@@ -69,12 +71,39 @@
       ".cursor/rules/xinyi-drink"
     ]
   },
+  "install_spec": {
+    "package_type": "executable-skill",
+    "instruction_only": false,
+    "source_directory": "skill",
+    "install": {
+      "type": "local-script",
+      "script": "install.sh",
+      "dry_run": "install.sh --dry-run",
+      "writes_to": [
+        "~/.openclaw/skills/xinyi-drink",
+        "~/.agents/skills/xinyi-drink",
+        "~/.claude/skills/xinyi-drink",
+        "~/.hermes/skills/xinyi-drink",
+        ".cursor/rules/xinyi-drink"
+      ]
+    },
+    "runtime": {
+      "type": "python-scripts",
+      "requires_network": true,
+      "entrypoints": [
+        "scripts/claim_reward.py",
+        "scripts/fetch_stores.py",
+        "scripts/query_orders.py",
+        "scripts/recommend_drink.py"
+      ]
+    }
+  },
   "tools": [
     {
       "name": "claim_reward",
       "display_name": "领取Skill用户大礼包",
       "script": "scripts/claim_reward.py",
-      "description": "按用户提供的手机号，或在活动状态查询场景复用已保存手机号，查询小程序账号并领取Skill用户大礼包。用户问“帮我领取新一Skill福利”“大礼包怎么领取”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态和轻量饮品建议。本机缓存已确认领取成功后，不能更换手机号重复领取；后端按3个月活动周期限制同一IP只允许一个手机号领取，并限制同一IP 10分钟内的领取尝试次数。只有用户明确问门店时，才另行查询门店。",
+      "description": "按用户提供的手机号，或在活动状态查询场景复用已保存手机号，查询小程序账号并领取Skill用户大礼包。用户问“帮我领取新一Skill福利”“大礼包怎么领取”“这个手机号领过了吗”“我登录小程序了”时使用；返回礼包状态和轻量饮品建议。本机缓存已确认领取成功后，不能更换手机号重复领取；最终回答不要解释内部领取规则，也不要输出发放统计明细等技术化表述。只有用户明确问门店时，才另行查询门店。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -93,7 +122,13 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
-        "openWorldHint": true
+        "openWorldHint": true,
+        "stateChanging": true,
+        "requiresExplicitUserIntent": true,
+        "personalData": [
+          "mobile"
+        ],
+        "userGuidance": "only-use-your-own-phone-number"
       }
     },
     {
@@ -117,7 +152,7 @@
       "name": "query_orders",
       "display_name": "查询用户订单",
       "script": "scripts/query_orders.py",
-      "description": "按用户提供或已保存的手机号查询用户订单，覆盖全部订单、历史订单/已完成订单、正在进行中订单。只要用户在问自己的个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录，都使用本工具；不要求出现“订单”两个字。典型问法包括“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“看我的历史订单”“帮我分析我的口味偏好”。咖啡/饮品统计只是基于订单数据的回答方式，不是触发前提。订单信息必须以接口返回为准，不能预估、估算或模糊处理。订单评级由脚本按接口返回杯数计算。",
+      "description": "按用户提供或已保存的手机号查询用户订单，覆盖全部订单、历史订单/已完成订单、正在进行中订单。只要用户在问自己的个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录，都使用本工具；不要求出现“订单”两个字。典型问法包括“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“看我的历史订单”“帮我分析我的口味偏好”。咖啡/饮品统计只是基于订单数据的回答方式，不是触发前提。订单信息只能基于本次查询结果，不能预估、估算或模糊处理。订单等级由脚本按本次查询到的杯数计算，最终回答必须展示脚本给出的等级句。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -148,7 +183,14 @@
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
-        "openWorldHint": true
+        "openWorldHint": true,
+        "requiresExplicitUserIntent": true,
+        "requiresUserOwnedPhone": true,
+        "personalData": [
+          "mobile",
+          "order_history"
+        ],
+        "userGuidance": "only-use-your-own-phone-number"
       }
     },
     {
@@ -199,7 +241,7 @@
         "sends": [
           "mobile"
         ],
-        "purpose": "查询并领取Skill用户大礼包；服务端读取请求IP做3个月活动周期风控和10分钟尝试频率限制"
+        "purpose": "查询并领取Skill用户大礼包；领取结果以服务端响应为准"
       },
       {
         "method": "GET",
@@ -234,7 +276,26 @@
       "updatedAt"
     ],
     "permissions": "0600 when supported",
-    "autoReadPolicy": "claim_reward 仅活动状态查询场景读取；recommend_drink 默认不读取缓存手机号；query_orders 仅订单/偏好分析场景读取；内部 --use-saved-mobile 才读取"
+    "autoReadPolicy": "claim_reward 仅活动状态查询场景读取；recommend_drink 默认不读取缓存手机号；query_orders 仅订单/偏好分析场景读取；内部 --use-saved-mobile 才读取",
+    "clearCommand": "python3 scripts/recommend_drink.py --clear-mobile",
+    "sharedMachineWarning": true
+  },
+  "privacy": {
+    "data_subject": "user-provided-or-saved-mobile-owner",
+    "personal_data": [
+      "mobile",
+      "activity_status",
+      "order_history"
+    ],
+    "user_guidance": [
+      "only-use-your-own-phone-number",
+      "clear-cache-on-shared-machines"
+    ],
+    "explicit_intent_required_for": [
+      "claim_reward",
+      "query_orders"
+    ],
+    "shared_machine_clear_command": "python3 scripts/recommend_drink.py --clear-mobile"
   },
   "environment": [
     "XINYI_API_BASE_URL",
@@ -242,7 +303,7 @@
     "XINYI_DRINK_STATE_FILE"
   ],
   "brand_prompt": {
-    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡的店员姐姐，熟门店、懂口味，会认真帮用户挑选，松弛有温度；信息有层次但不要报告腔。个性化推荐时把用户常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品，不要默认推荐用户最常点的饮品。本机缓存已确认领取成功后，不能更换手机号重复领取；后端按3个月活动周期限制同一IP只允许一个手机号领取，并限制同一IP 10分钟内的领取尝试次数。只有用户问活动、福利或领取且未提供手机号时，才请用户发送微信小程序【新一咖啡】绑定手机号；查询确认未注册或未登录时，再说明Skill用户大礼包内容、活动规则和两步领取方法，不要回答成没有其他活动。用户不是在问活动、福利或领取时，即使已参与，也不要向最终回答暴露活动状态，不要主动提身份验证、礼包到账或领取。活动参与成功、用户查询已参与或领取成功时，必须展示接口返回明细，包括成功/失败数量、券发放 message、实际券名和数量。",
+    "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡的店员姐姐，熟门店、懂口味，会认真帮用户挑选，松弛有温度；信息有层次但不要报告腔。个性化推荐时把用户常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品，不要默认推荐用户最常点的饮品。本机缓存已确认领取成功后，不能更换手机号重复领取；最终回答不要解释内部领取规则，也不要输出发放统计明细等技术化表述。只有用户问活动、福利或领取且未提供手机号时，才请用户发送微信小程序【新一咖啡】绑定手机号；查询确认未注册或未登录时，再说明Skill用户大礼包内容、活动规则和两步领取方法，不要回答成没有其他活动。用户不是在问活动、福利或领取时，即使已参与，也不要向最终回答暴露活动状态，不要主动提身份验证、礼包到账或领取。活动参与成功、用户查询已参与或领取成功时，用普通陈述说明礼包已到账和实际券名；没有新的券明细时说明系统识别该手机号已参与/已领取。",
     "tone": {
       "personality": "warm_practical_honest",
       "avoid": [
@@ -256,6 +317,12 @@
     "packageType": "executable-skill",
     "instructionOnly": false,
     "dataClassification": "optional-phone-number",
-    "privacyReviewed": "2026-04-28"
+    "privacyReviewed": "2026-04-28",
+    "installSpec": {
+      "type": "local-script",
+      "script": "install.sh",
+      "dryRun": "install.sh --dry-run",
+      "sourceDirectory": "skill"
+    }
   }
 }

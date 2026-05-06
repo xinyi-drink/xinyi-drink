@@ -7,7 +7,7 @@
 - `claim_reward.py`: 调用 `/skill/xinyi/claim`；本轮可用 `--mobile` 传入手机号，活动状态查询场景也可用 `--use-saved-mobile` 复用缓存手机号；成功或已参与时会再结合 `/skill/xinyi/context` 输出礼包状态和推荐文案
 - `fetch_stores.py`: 调用 `/skill/xinyi/stores`，并把原始门店数据整理成表格文本
 - `query_orders.py`: 调用 `/skill/xinyi/orders`，查询全部订单、历史订单/已完成订单和正在进行中订单，并可基于返回数据输出已定饮品、可见杯数和咖啡相关饮品摘要
-- `recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口返回的商品、天气和可选订单历史整理成可直接提供给大模型的表格/文本上下文；默认不读取本地缓存手机号，只有内部 `--use-saved-mobile` 或本轮 `--mobile` 才发送手机号
+- `recommend_drink.py`: 调用 `/skill/xinyi/context`，并把服务返回的商品、天气和可选订单历史整理成可直接提供给大模型的表格/文本上下文；默认不读取本地缓存手机号，只有内部 `--use-saved-mobile` 或本轮 `--mobile` 才发送手机号
 - `skill_config.py`: 读取默认配置，并支持 `XINYI_API_BASE_URL`、`XINYI_TIMEOUT_SECONDS` 环境变量覆盖
 - `skill_http.py`: 统一 JSON 请求、URL query 编码、调试日志和可读网络错误
 - `user_state.py`: 读写本地手机号与活动状态缓存，状态文件默认设置为仅当前用户可读写
