@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -41,6 +42,10 @@ class InstallScriptTest(unittest.TestCase):
             self.assertIn("查询门店及等候时长", result.stdout)
             self.assertNotIn("给我推荐一杯适合当下午茶的饮品", result.stdout)
             self.assertIn("隐私提示", result.stdout)
+            self.assertIn("本机缓存已确认领取成功后，不能更换手机号重复领取", result.stdout)
+            self.assertIn("服务端只在领取成功后记录 IP 领取名额", result.stdout)
+            self.assertIn("3 个月活动周期", result.stdout)
+            self.assertIn("10 分钟", result.stdout)
             self.assertIn("XINYI_API_BASE_URL", result.stdout)
             self.assertIn("~/.xinyi-drink/state.json", result.stdout)
             self.assertNotIn("告知小程序绑定的手机号", result.stdout)
@@ -95,6 +100,31 @@ class InstallScriptTest(unittest.TestCase):
                 result.stdout,
             )
 
+    def test_install_script_accepts_platform_case_insensitively(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            home_dir = tmp_path / "home"
+            home_dir.mkdir()
+
+            result = subprocess.run(
+                ["sh", str(skill_root / "install.sh"), "--dry-run", "--platform", "LobsterAI"],
+                cwd=skill_root,
+                env={
+                    **dict(__import__("os").environ),
+                    "HOME": str(home_dir),
+                },
+                capture_output=True,
+                check=True,
+                text=True,
+            )
+
+            self.assertIn(
+                str(home_dir / ".agents" / "skills" / "xinyi-drink"),
+                result.stdout,
+            )
+
     def test_install_script_backs_up_existing_installation_before_overwrite(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
 
@@ -133,6 +163,52 @@ class InstallScriptTest(unittest.TestCase):
             self.assertTrue(backups)
             self.assertTrue((backups[-1] / "local-marker.txt").exists())
             self.assertIn("已备份旧版本到", result.stdout)
+
+    def test_cursor_install_targets_repo_root_when_run_from_skill_dir(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            copied_skill_root = tmp_path / "skill"
+            shutil.copytree(skill_root, copied_skill_root)
+
+            subprocess.run(
+                ["sh", str(copied_skill_root / "install.sh"), "--platform", "cursor"],
+                cwd=copied_skill_root,
+                capture_output=True,
+                check=True,
+                text=True,
+            )
+
+            self.assertTrue((tmp_path / ".cursor" / "rules" / "xinyi-drink").exists())
+            self.assertFalse((copied_skill_root / ".cursor" / "rules" / "xinyi-drink").exists())
+
+    def test_check_installed_reports_drift_without_overwriting(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            home_dir = tmp_path / "home"
+            home_dir.mkdir()
+            installed_root = home_dir / ".agents" / "skills" / "xinyi-drink"
+            installed_root.mkdir(parents=True)
+            (installed_root / "SKILL.md").write_text("old install", encoding="utf-8")
+
+            result = subprocess.run(
+                ["sh", str(skill_root / "install.sh"), "--platform", "codex", "--check-installed"],
+                cwd=skill_root,
+                env={
+                    **dict(__import__("os").environ),
+                    "HOME": str(home_dir),
+                },
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 4)
+            self.assertIn("已安装版本与当前源码不一致", result.stdout)
+            self.assertEqual((installed_root / "SKILL.md").read_text(encoding="utf-8"), "old install")
 
 
 if __name__ == "__main__":

@@ -18,11 +18,12 @@ def claim_data_from_response(response: dict[str, Any]) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def normalize_claim_data(
+def normalize_claim_data_in_place(
     response: dict[str, Any],
     requested_mobile: str,
     previous_activity_joined: bool | None,
 ) -> dict[str, Any]:
+    """Normalize response.data in place for rendering and local state decisions."""
     data = claim_data_from_response(response)
     if not data or not claim_response_succeeded(response):
         return data

@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-PREFERENCE_NAME_KEYWORDS = (
+COFFEE_NAME_KEYWORDS = (
     "咖啡",
     "拿铁",
     "美式",
@@ -12,6 +12,13 @@ PREFERENCE_NAME_KEYWORDS = (
     "冷萃",
     "浓缩",
     "dirty",
+    "espresso",
+    "latte",
+    "americano",
+    "mocha",
+)
+
+PREFERENCE_NAME_KEYWORDS = COFFEE_NAME_KEYWORDS + (
     "茶",
     "毛尖",
     "果茶",
@@ -54,6 +61,8 @@ def read_order_good_count(order_good: dict[str, Any]) -> int:
         return count
     if isinstance(count, str) and count.isdigit():
         return int(count)
+    # Deliberately differs from query_orders.read_good_num: scoring only needs
+    # to know the named item appeared, while order summaries require exact cups.
     return 1
 
 

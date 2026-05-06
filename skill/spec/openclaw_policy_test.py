@@ -13,37 +13,23 @@ class OpenClawPolicyTest(unittest.TestCase):
         "查询门店及等候时长",
     ]
 
-    def test_skill_md_frontmatter_declares_openclaw_runtime_metadata(self) -> None:
+    def test_skill_md_frontmatter_stays_codex_compatible_and_compact(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
-        payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
 
         frontmatter = skill_md.split("---", 2)[1]
         self.assertIn("name: xinyi-drink", frontmatter)
-        self.assertRegex(frontmatter, r"version: \d+\.\d+\.\d+")
-        self.assertIn(f"version: {payload['version']}", frontmatter)
-        self.assertIn("keywords:", frontmatter)
-        self.assertIn("metadata:", frontmatter)
-        self.assertIn("openclaw:", frontmatter)
-        self.assertIn("packageType: executable-skill", frontmatter)
-        self.assertIn("instructionOnly: false", frontmatter)
-        self.assertIn("type: local-script", frontmatter)
-        self.assertIn("script: install.sh", frontmatter)
-        self.assertIn("dryRun: install.sh --dry-run", frontmatter)
-        self.assertIn("postInstallPrompts:", frontmatter)
+        self.assertIn("description: >-", frontmatter)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, frontmatter)
-        self.assertIn("type: python-scripts", frontmatter)
-        self.assertIn("requiredEnv: []", frontmatter)
-        self.assertIn("optionalEnv:", frontmatter)
-        self.assertIn("XINYI_API_BASE_URL", frontmatter)
-        self.assertIn("defaultApiBaseUrl: https://ai.xinyicoffee.com/api", frontmatter)
-        self.assertIn("path: /skill/xinyi/claim", frontmatter)
-        self.assertIn("sends: [mobile]", frontmatter)
-        self.assertIn("defaultPath: ~/.xinyi-drink/state.json", frontmatter)
-        self.assertIn("autoReadPolicy:", frontmatter)
-        self.assertNotIn("networkAccess:", frontmatter)
-        self.assertNotIn("environment:", frontmatter)
+        self.assertLessEqual(len(frontmatter), 1024)
+        self.assertNotIn("version:", frontmatter)
+        self.assertNotIn("keywords:", frontmatter)
+        self.assertNotIn("metadata:", frontmatter)
+        self.assertNotIn("openclaw:", frontmatter)
+        self.assertNotIn("runtime:", frontmatter)
+        self.assertNotIn("network:", frontmatter)
+        self.assertNotIn("localStorage:", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -76,7 +62,8 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn(f"version: {payload['version']}", skill_md)
+        self.assertIn('"version": "1.1.4"', json.dumps(payload, ensure_ascii=False))
+        self.assertNotIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["source"]["type"], "git")
@@ -124,6 +111,11 @@ class OpenClawPolicyTest(unittest.TestCase):
             tool["name"]: tool["description"]
             for tool in payload["tools"]
         }
+        tool_display_names = {
+            tool["name"]: tool["display_name"]
+            for tool in payload["tools"]
+        }
+        self.assertEqual(tool_display_names["fetch_stores"], "查询门店及等候时长")
         self.assertIn("用户问“帮我领取新一Skill福利”", tool_descriptions["claim_reward"])
         self.assertIn("用户问“新一咖啡有哪些门店”", tool_descriptions["fetch_stores"])
         self.assertIn("望京店目前有多少杯待做", tool_descriptions["fetch_stores"])
@@ -142,6 +134,14 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("咖啡/饮品统计只是基于订单数据的回答方式", tool_descriptions["query_orders"])
         self.assertIn("不能预估、估算或模糊处理", tool_descriptions["query_orders"])
         self.assertIn("订单评级由脚本按接口返回杯数计算", tool_descriptions["query_orders"])
+        claim_reward_schema = next(
+            tool["inputSchema"]
+            for tool in payload["tools"]
+            if tool["name"] == "claim_reward"
+        )
+        self.assertEqual(claim_reward_schema["required"], [])
+        self.assertIn("useSavedMobile", claim_reward_schema["properties"])
+        self.assertIn("活动状态查询", claim_reward_schema["properties"]["useSavedMobile"]["description"])
         query_orders_schema = next(
             tool["inputSchema"]
             for tool in payload["tools"]
@@ -172,9 +172,10 @@ class OpenClawPolicyTest(unittest.TestCase):
 
         self.assertIn("Skill用户大礼包", readme)
         self.assertIn("skill/SKILL.md", readme)
-        self.assertIn("metadata.openclaw", readme)
+        self.assertIn("SKILL.md frontmatter 只保留 name 和 description", readme)
         self.assertIn("skill/skill.json", readme)
-        self.assertIn("发布前两处版本号需要保持一致", readme)
+        self.assertNotIn("metadata.openclaw", readme)
+        self.assertNotIn("发布前两处版本号需要保持一致", readme)
         self.assertIn("默认后端", readme)
         self.assertIn("https://ai.xinyicoffee.com/api", readme)
         self.assertIn("POST /skill/xinyi/claim", readme)

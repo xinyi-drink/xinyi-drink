@@ -39,22 +39,6 @@ def write_state(payload: dict) -> None:
         pass
 
 
-def save_mobile(mobile: str) -> None:
-    current = load_state()
-    current_activity_joined = current.get("activityJoined")
-    activity_joined = (
-        current_activity_joined
-        if current.get("mobile") == mobile and isinstance(current_activity_joined, bool)
-        else None
-    )
-    payload = {
-        "mobile": mobile,
-        "activityJoined": activity_joined,
-        "updatedAt": datetime.now(timezone.utc).isoformat(),
-    }
-    write_state(payload)
-
-
 def save_activity_state(mobile: str, activity_joined: bool) -> None:
     payload = {
         "mobile": mobile,
@@ -82,10 +66,6 @@ def load_activity_joined(mobile: str | None) -> bool | None:
 
     value = payload.get("activityJoined")
     return value if isinstance(value, bool) else None
-
-
-def has_activity_joined(mobile: str | None) -> bool:
-    return load_activity_joined(mobile) is True
 
 
 def clear_mobile() -> None:

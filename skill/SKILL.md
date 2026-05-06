@@ -1,79 +1,8 @@
 ---
 name: xinyi-drink
-version: 1.1.4
 description: >-
   Use when users ask to 领取Skill用户大礼包, 查询及分析个人历史订单,
   查询菜单及饮品热量, or 查询门店及等候时长 for 新一好喝/新一咖啡.
-keywords:
-  - 新一好喝
-  - 新一咖啡
-  - Skill用户大礼包
-  - 今天喝什么
-  - 下午茶
-  - 困了
-  - 上班犯困
-  - 提神
-  - 门店
-  - 菜单
-  - 订单
-  - 历史订单
-  - 购买记录
-metadata:
-  openclaw:
-    packageType: executable-skill
-    instructionOnly: false
-    dataClassification: optional-phone-number
-    privacyReviewed: "2026-04-28"
-    homepage: https://github.com/xinyi-drink/xinyi-drink
-    repository: https://github.com/xinyi-drink/xinyi-drink
-    source:
-      type: git
-      url: https://github.com/xinyi-drink/xinyi-drink
-      directory: skill
-    install:
-      type: local-script
-      script: install.sh
-      dryRun: install.sh --dry-run
-      writesTo:
-        - ~/.openclaw/skills/xinyi-drink
-      postInstallPrompts:
-        - 领取Skill用户大礼包
-        - 查询及分析个人历史订单
-        - 查询菜单及饮品热量
-        - 查询门店及等候时长
-    runtime:
-      type: python-scripts
-      requiresNetwork: true
-      entrypoints:
-        - scripts/claim_reward.py
-        - scripts/fetch_stores.py
-        - scripts/query_orders.py
-        - scripts/recommend_drink.py
-    requiredEnv: []
-    optionalEnv:
-      - XINYI_API_BASE_URL
-      - XINYI_TIMEOUT_SECONDS
-      - XINYI_DRINK_STATE_FILE
-    network:
-      defaultApiBaseUrl: https://ai.xinyicoffee.com/api
-      endpoints:
-        - method: POST
-          path: /skill/xinyi/claim
-          sends: [mobile]
-        - method: GET
-          path: /skill/xinyi/context
-          sends: [optional mobile query]
-        - method: GET
-          path: /skill/xinyi/orders
-          sends: [mobile query, optional status query]
-        - method: GET
-          path: /skill/xinyi/stores
-          sends: []
-    localStorage:
-      defaultPath: ~/.xinyi-drink/state.json
-      contents: [mobile, activityJoined, updatedAt]
-      permissions: "0600 when supported"
-      autoReadPolicy: "recommend_drink 默认不读取缓存手机号；query_orders 仅订单/偏好分析场景读取；内部 --use-saved-mobile 才读取"
 ---
 # /xinyi-drink — 新一好喝咖啡茶饮Skill
 
@@ -95,7 +24,7 @@ metadata:
 4. 门店/菜单/品牌介绍遇到实时接口失败时，可以用本文件和 references 的静态说明兜底，但必须标明“没拿到实时数据”。
 5. 用户问大礼包/福利/怎么领时，先请用户发送微信小程序【新一咖啡】绑定的手机号；有手机号再领取，不要把 `no_reward_config` 或未注册解释成“没有活动”。
 6. 用户不是在问活动/福利/领取时，即使缓存显示已参与，也不要向回答暴露活动状态，不要主动提活动、福利、身份验证或礼包到账。
-7. 当前会话已确认领取成功后，不能更换手机号重复领取；后端还会按 3 个月活动周期限制同一 IP 只允许一个手机号领取，并限制同一 IP 10 分钟内的领取尝试次数。
+7. 本机缓存已确认领取成功后，不能更换手机号重复领取；后端还会按 3 个月活动周期限制同一 IP 只允许一个手机号领取，并限制同一 IP 10 分钟内的领取尝试次数。
 8. 推荐尝试要把常点饮品当口味参考，优先主推口味相邻但不常点或未点过的饮品；不要默认推荐用户最常点的饮品。
 9. 推荐回答要有层次、有重点、有温度；主推饮品名加粗，emoji 少量使用。只有用户明确提到门店时才返回门店信息。
 
@@ -116,7 +45,7 @@ Agent 会自动帮你安装好。
 | 用户怎么问 | 调用什么 |
 | --- | --- |
 | “帮我领取新一Skill福利”“大礼包怎么领取”“我想领福利” | 无手机号先请求用户发送【新一咖啡】绑定手机号；有手机号调用 `scripts/claim_reward.py --mobile <手机号>` |
-| “这个手机号领过了吗”“我登录小程序了”“换个手机号” | 调用 `scripts/claim_reward.py --mobile <手机号>` 同步状态 |
+| “这个手机号领过了吗”“我登录小程序了”“换个手机号” | 用户本轮提供手机号时调用 `scripts/claim_reward.py --mobile <手机号>`；未提供手机号且已有缓存时可调用 `scripts/claim_reward.py --use-saved-mobile` 同步状态 |
 | 个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录；不要求用户说出“订单”两个字，如“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“我的饮品做好了吗” | 调用 `scripts/query_orders.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>`；问正在进行中订单加 `--status 2`，问历史/已完成订单加 `--status 4`，否则不传 status 查全部 |
 | “新一咖啡有哪些门店”“望京店目前有多少杯待做，等待时间多久” | 调用 `scripts/fetch_stores.py` |
 | “某某饮品热量多少”“有哪些不太甜的果茶” | 调用 `scripts/recommend_drink.py --query <问题>` |
@@ -168,11 +97,7 @@ Agent 会自动帮你安装好。
 第二步：发送手机号给我
 绑定完成后，把您的手机号发过来，我帮您领取Skill用户大礼包。
 
-Skill用户大礼包包含：小龙虾贴纸、Skill用户身份标识、Skill用户专享赠饮券。
-活动规则：
-小龙虾贴纸：到任意门店对暗号【小龙虾】领取，先到先得。
-Skill用户专享赠饮券：（前100名）爆款苦尽甘来拿铁免费兑换券 / （101-500名）5折饮品券 / （501-以后）8折饮品券。
-Skill用户身份标识：参与即可添加SKILL 标签、龙虾头像。
+礼包内容和活动规则按上方“活动规则固定表达”输出。
 需要先完成微信小程序登录/手机绑定。
 
 **实时接口失败**

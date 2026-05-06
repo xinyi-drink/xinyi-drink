@@ -32,6 +32,19 @@ class SkillConfigTest(unittest.TestCase):
         self.assertEqual(config["apiBaseUrl"], "http://127.0.0.1:8020")
         self.assertEqual(config["timeoutSeconds"], 3)
 
+    def test_load_config_clamps_timeout_override_to_positive_seconds(self) -> None:
+        previous_timeout = os.environ.get("XINYI_TIMEOUT_SECONDS")
+        os.environ["XINYI_TIMEOUT_SECONDS"] = "0"
+        try:
+            config = skill_config.load_config()
+        finally:
+            if previous_timeout is None:
+                os.environ.pop("XINYI_TIMEOUT_SECONDS", None)
+            else:
+                os.environ["XINYI_TIMEOUT_SECONDS"] = previous_timeout
+
+        self.assertEqual(config["timeoutSeconds"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

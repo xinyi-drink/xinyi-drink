@@ -18,7 +18,7 @@ def load_config() -> dict[str, Any]:
     timeout_seconds = os.getenv("XINYI_TIMEOUT_SECONDS")
     if timeout_seconds:
         try:
-            config["timeoutSeconds"] = int(timeout_seconds)
+            config["timeoutSeconds"] = max(1, int(timeout_seconds))
         except ValueError:
             pass
 

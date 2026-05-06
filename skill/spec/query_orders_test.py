@@ -9,6 +9,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import query_orders
+import recommendation_logic
 from skill_http import SkillHttpError
 
 
@@ -140,6 +141,13 @@ class QueryOrdersScriptTest(unittest.TestCase):
 
     def test_zero_cups_do_not_output_order_rating(self) -> None:
         self.assertEqual(query_orders.build_order_rating_lines(0), [])
+
+    def test_english_coffee_keywords_are_shared_with_preference_tags(self) -> None:
+        self.assertTrue(query_orders.is_coffee_name("Espresso Tonic"))
+        self.assertIn(
+            "espresso",
+            recommendation_logic.extract_name_preference_tags("Espresso Tonic"),
+        )
 
     @patch.object(query_orders, "load_mobile", return_value="15712459595")
     @patch.object(

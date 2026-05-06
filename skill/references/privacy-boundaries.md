@@ -5,7 +5,7 @@
 - 活动领取、活动总览、订单查询和口味偏好分析可接受手机号作为身份输入。
 - 普通推荐、门店查询和菜单查询默认不读取本地缓存手机号，也不自动发送手机号。
 - 手机号会在以下场景发送到后端：
-  - `POST /skill/xinyi/claim`: JSON body 中发送 `mobile`，用于查询或领取活动奖励。
+  - `POST /skill/xinyi/claim`: 用户本轮提供手机号，或 Agent 在活动状态查询场景使用内部 `--use-saved-mobile` 时，在 JSON body 中发送 `mobile`，用于查询或领取活动奖励。
   - `GET /skill/xinyi/context`: 用户本轮提供手机号，或 Agent 在活动总览/明确个性化推荐场景使用内部 `--use-saved-mobile` 时，以 query 发送 `mobile`，用于获取商品、天气和可选活动状态。
   - `GET /skill/xinyi/orders`: 用户本轮提供手机号，或 Agent 在订单查询/口味偏好分析场景使用内部 `--use-saved-mobile` 时，以 query 发送 `mobile`，用于获取精简用户订单。
 - 普通门店查询 `GET /skill/xinyi/stores` 不发送手机号。
@@ -22,8 +22,8 @@
 
 - 活动领取和活动状态确认会把当前手机号和活动状态默认保存到本地状态文件：`~/.xinyi-drink/state.json`。
 - 状态文件写入后会尽量设置为 `0600` 权限，只允许当前用户读写。
-- 状态结构为 `{mobile, activityJoined, updatedAt}`；`activityJoined=null` 表示接口尚未确认。
-- 本地状态已确认某手机号领取成功后，Skill 不允许在同一会话内换成另一个手机号重复领取。
+- 状态结构为 `{mobile, activityJoined, updatedAt}`；`activityJoined=true/false` 分别表示接口已确认参加/未参加，状态缺失或 `null` 表示当前没有可复用的确认状态。
+- 本机缓存已确认某手机号领取成功后，Skill 不允许换成另一个手机号重复领取。
 - 用户可运行 `python3 scripts/recommend_drink.py --clear-mobile` 清空当前缓存手机号和活动状态。
 
 ## 不做的事

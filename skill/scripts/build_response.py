@@ -43,7 +43,24 @@ ACTIVITY_RULE_LINES = [
     "Skill用户身份标识：参与即可添加SKILL 标签、龙虾头像。",
 ]
 ACTIVITY_QUERY_KEYWORDS = ("活动", "福利", "优惠", "券", "见面礼", "龙虾", "领取")
-ORDER_QUERY_KEYWORDS = ("订单", "过去", "历史", "完成", "买过", "购买", "消费", "几单", "多少单", "下过单")
+ORDER_QUERY_KEYWORDS = (
+    "我的订单",
+    "个人订单",
+    "历史订单",
+    "订单历史",
+    "订单记录",
+    "订单信息",
+    "订单状态",
+    "已完成订单",
+    "已完成",
+    "买过",
+    "购买",
+    "消费",
+    "几单",
+    "多少单",
+    "下过单",
+)
+ORDER_EXACT_QUERIES = ("订单", "历史记录")
 
 
 def build_register_instruction() -> str:
@@ -215,6 +232,12 @@ def is_activity_query(context: dict[str, Any]) -> bool:
 
 
 def is_order_query(context: dict[str, Any]) -> bool:
+    text = " ".join(
+        str(context.get(key) or "")
+        for key in ("query", "scene", "preference")
+    ).strip()
+    if text in ORDER_EXACT_QUERIES:
+        return True
     return context_matches_keywords(context, ORDER_QUERY_KEYWORDS)
 
 
@@ -276,37 +299,6 @@ def format_order_state(state: Any) -> str:
         return ORDER_STATE_LABELS.get(state, f"状态{state}")
 
     return escape_table_cell(state)
-
-
-def format_store_wait(store: dict[str, Any]) -> str:
-    wait_parts: list[str] = []
-    if store.get("makingCupCount") is not None:
-        wait_parts.append(f"制作中{store.get('makingCupCount')}杯")
-    if store.get("makingCupMinutes") is not None:
-        wait_parts.append(f"预计{store.get('makingCupMinutes')}分钟")
-
-    return "，".join(wait_parts) if wait_parts else "暂无排队信息"
-
-
-def build_store_pickup_lines(stores: list[dict[str, Any]]) -> list[str]:
-    if not stores:
-        return []
-
-    lines = ["您可以到我们的店领取奖励，贴纸对暗号【小龙虾】领取，先到先得。门店信息我给您列全（地址、电话、设施、排队）："]
-
-    for store in stores:
-        lines.append(
-            "；".join(
-                [
-                    f"**{store.get('name') or '-'}**：地址：{store.get('address') or '-'}",
-                    f"电话：{pick_store_contact(store) or '未提供联系电话'}",
-                    f"设施：{render_store_facilities_text(store) or '未提供设施文案'}",
-                    f"排队：{format_store_wait(store)}",
-                ]
-            )
-        )
-
-    return lines
 
 
 def build_activity_completion_lines(kind: str, coupon_names: list[str]) -> list[str]:
@@ -382,7 +374,8 @@ def build_order_followup_lines(orders: dict[str, Any] | None) -> list[str]:
 
     lines = [completed_line, f"当前可见订单数：{len(order_list)}单。"]
     if goods_names:
-        lines.append(f"买过的商品可以提这些：{'、'.join(goods_names[:5])}。")
+        unique_goods_names = list(dict.fromkeys(goods_names))
+        lines.append(f"买过的商品可以提这些：{'、'.join(unique_goods_names[:5])}。")
     if store_names:
         unique_store_names = list(dict.fromkeys(store_names))
         lines.append(f"到过的门店可以提这些：{'、'.join(unique_store_names[:3])}。")
@@ -542,7 +535,6 @@ def render_recommendation_context(
     *,
     context: dict[str, Any],
     goods: list[dict[str, Any]],
-    stores: list[dict[str, Any]],
     weather: dict[str, Any] | None,
     orders: dict[str, Any] | None,
 ) -> str:
@@ -553,9 +545,7 @@ def render_recommendation_context(
         render_order_followup_section(context, orders),
         render_goods_section(goods),
     ]
-    if stores:
-        sections.append(render_stores_section(stores))
-    sections.append(render_answer_requirements_section(stores, context))
+    sections.append(render_answer_requirements_section([], context))
     if is_activity_query(context):
         sections.insert(1, render_brand_activity_section(context))
 
@@ -596,7 +586,6 @@ def render_claim_result(
 
     context_data = context_data or {}
     goods = context_data.get("goods", [])
-    stores = context_data.get("stores", [])
     weather = context_data.get("weather")
     orders = context_data.get("orders")
     recommendation_copy = build_recommendation_fallback_copy(goods, orders, weather)
@@ -604,15 +593,7 @@ def render_claim_result(
     title = "领取结果：处理完成"
     lines: list[str] = []
 
-    if kind == "granted":
-        title = "领取结果：身份验证成功"
-        lines.extend(build_activity_completion_lines(kind, coupon_names))
-        lines.extend(build_claim_detail_lines(data, items))
-    elif kind == "obtained_after_registration":
-        title = "领取结果：身份验证成功"
-        lines.extend(build_activity_completion_lines(kind, coupon_names))
-        lines.extend(build_claim_detail_lines(data, items))
-    elif kind == "already_claimed":
+    if is_joined_claim_kind(kind):
         title = "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
         lines.extend(build_claim_detail_lines(data, items))
@@ -624,9 +605,6 @@ def render_claim_result(
 
     if user and user.get("nickname"):
         lines.append(f"当前识别用户：{user.get('nickname')}")
-
-    if is_joined_claim_kind(kind):
-        lines.extend(build_store_pickup_lines(stores))
 
     if recommendation_copy:
         lines.append(recommendation_copy)

@@ -4,7 +4,12 @@ from __future__ import annotations
 import argparse
 import sys
 
-from build_response import render_recommendation_context, render_recommendation_unavailable
+from build_response import (
+    is_activity_query,
+    is_order_query,
+    render_recommendation_context,
+    render_recommendation_unavailable,
+)
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger
 from user_state import (
@@ -15,6 +20,47 @@ from user_state import (
 
 
 debug_log = make_debug_logger("recommend_drink")
+
+PERSONALIZED_RECOMMENDATION_KEYWORDS = (
+    "我的口味",
+    "我的偏好",
+    "我常点",
+    "我经常点",
+    "我不常点",
+    "没喝过",
+    "未喝过",
+    "没点过",
+    "未点过",
+    "根据我",
+    "适合我",
+    "个性化",
+    "推荐尝试",
+)
+
+# 仅活动总览、订单或明确个性化推荐这类场景才允许复用本地缓存手机号。
+# 普通推荐、菜单、热量查询不在此列；缺关键词时即使加了 --use-saved-mobile 也不发送手机号，
+# 防止 Agent 误调时把缓存手机号扩散到普通菜单查询。
+
+
+def matches_personalized_recommendation_query(args) -> bool:
+    text = " ".join(
+        str(value or "")
+        for value in (args.query, args.scene, args.preference)
+    )
+    return any(keyword in text for keyword in PERSONALIZED_RECOMMENDATION_KEYWORDS)
+
+
+def is_personalized_query(args) -> bool:
+    context = {
+        "query": args.query,
+        "scene": args.scene,
+        "preference": args.preference,
+    }
+    return (
+        is_activity_query(context)
+        or is_order_query(context)
+        or matches_personalized_recommendation_query(args)
+    )
 
 
 def main() -> int:
@@ -41,13 +87,24 @@ def main() -> int:
     if args.clear_mobile:
         clear_mobile()
         debug_log(args.debug, "cleared saved mobile")
+        sys.stdout.write("已清空本地手机号缓存和活动状态。\n")
+        return 0
 
     resolved_mobile = args.mobile
+    saved_mobile_skipped_for_generic_query = False
     if not resolved_mobile and args.use_saved_mobile:
-        resolved_mobile = load_mobile()
+        if is_personalized_query(args):
+            resolved_mobile = load_mobile()
+        else:
+            saved_mobile_skipped_for_generic_query = True
 
     if args.mobile:
         debug_log(args.debug, "resolved mobile from cli argument")
+    elif saved_mobile_skipped_for_generic_query:
+        debug_log(
+            args.debug,
+            "saved mobile not reused: query is not activity/order/personalized",
+        )
     elif args.use_saved_mobile and resolved_mobile:
         debug_log(args.debug, "resolved mobile from local state")
     elif args.use_saved_mobile:
@@ -78,17 +135,19 @@ def main() -> int:
         "context includes weather data" if weather_data is not None else "context missing weather; using generic recommendation copy",
     )
 
+    mobile_from_store = bool(
+        resolved_mobile and args.use_saved_mobile and not args.mobile
+    )
     rendered_context = render_recommendation_context(
         context={
             "mobile": resolved_mobile,
-            "mobileFromStore": bool(resolved_mobile and args.use_saved_mobile and not args.mobile),
+            "mobileFromStore": mobile_from_store,
             "preference": args.preference,
             "query": args.query,
             "scene": args.scene,
             "activityJoined": load_activity_joined(resolved_mobile),
         },
         goods=context_data.get("goods", []),
-        stores=context_data.get("stores", []),
         weather=weather_data,
         orders=context_data.get("orders"),
     )

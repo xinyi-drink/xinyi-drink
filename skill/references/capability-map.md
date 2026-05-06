@@ -3,7 +3,8 @@
 ## 脚本与能力
 
 - `skill.json`: 机器可读能力地图，供 OpenClaw、ClawHub 和其它平台识别脚本、接口、隐私边界和关键词
-- `claim_reward.py`: 调用 `/skill/xinyi/claim`；成功或已参与时会再结合 `/skill/xinyi/context` 输出礼包状态和推荐文案
+- `activity_claim.py`: 规范化 `/skill/xinyi/claim` 返回的活动状态，并识别已参与类结果
+- `claim_reward.py`: 调用 `/skill/xinyi/claim`；本轮可用 `--mobile` 传入手机号，活动状态查询场景也可用 `--use-saved-mobile` 复用缓存手机号；成功或已参与时会再结合 `/skill/xinyi/context` 输出礼包状态和推荐文案
 - `fetch_stores.py`: 调用 `/skill/xinyi/stores`，并把原始门店数据整理成表格文本
 - `query_orders.py`: 调用 `/skill/xinyi/orders`，查询全部订单、历史订单/已完成订单和正在进行中订单，并可基于返回数据输出已定饮品、可见杯数和咖啡相关饮品摘要
 - `recommend_drink.py`: 调用 `/skill/xinyi/context`，并把接口返回的商品、天气和可选订单历史整理成可直接提供给大模型的表格/文本上下文；默认不读取本地缓存手机号，只有内部 `--use-saved-mobile` 或本轮 `--mobile` 才发送手机号
@@ -12,7 +13,7 @@
 - `user_state.py`: 读写本地手机号与活动状态缓存，状态文件默认设置为仅当前用户可读写
 - `recommendation_logic.py`: 选择推荐候选饮品、组织推荐依据和兜底推荐文案
 - `response_rendering.py`: Markdown 表格和基础文本渲染
-- `build_response.py`: 组合用户上下文、天气、订单、商品、推荐素材和活动结果输出；门店信息只在门店查询脚本或明确返回门店数据时输出
+- `build_response.py`: 组合用户上下文、天气、订单、商品、推荐素材和活动结果输出；门店列表只由门店查询脚本输出，推荐和领取结果不主动带出门店
 
 ## 网络边界
 

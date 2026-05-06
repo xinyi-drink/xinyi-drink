@@ -6,6 +6,7 @@ import sys
 from typing import Any
 
 from build_response import render_orders_section
+from recommendation_logic import COFFEE_NAME_KEYWORDS
 from response_rendering import render_text_section
 from skill_config import load_config
 from skill_http import SkillHttpError, build_url, fetch_json, make_debug_logger
@@ -13,20 +14,6 @@ from user_state import load_mobile
 
 
 debug_log = make_debug_logger("query_orders")
-
-COFFEE_NAME_KEYWORDS = (
-    "咖啡",
-    "拿铁",
-    "美式",
-    "摩卡",
-    "冷萃",
-    "浓缩",
-    "dirty",
-    "espresso",
-    "latte",
-    "americano",
-    "mocha",
-)
 
 
 def is_coffee_name(name: str) -> bool:
@@ -67,6 +54,7 @@ def read_good_num(good: dict[str, Any]) -> int:
         return num
     if isinstance(num, str) and num.isdigit():
         return int(num)
+    # Order summaries only count cups explicitly returned by the orders endpoint.
     return 0
 
 

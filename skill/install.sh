@@ -3,9 +3,11 @@ set -eu
 
 SKILL_NAME="xinyi-drink"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 PLATFORM=""
 DRY_RUN=false
+CHECK_INSTALLED=false
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -21,10 +23,14 @@ while [ $# -gt 0 ]; do
       DRY_RUN=true
       shift
       ;;
+    --check-installed)
+      CHECK_INSTALLED=true
+      shift
+      ;;
     -h|--help)
       cat <<EOF
 用法：
-  ./install.sh [--platform 平台] [--dry-run]
+  ./install.sh [--platform 平台] [--dry-run] [--check-installed]
 
 支持的平台：
   claude-code   -> ~/.claude/skills/
@@ -42,7 +48,8 @@ while [ $# -gt 0 ]; do
   - hermes 安装到 ~/.hermes/skills/
   - qclaw / lobsterai / workbuddy / codex / universal 安装到 ~/.agents/skills/
   - claude-code 安装到 ~/.claude/skills/
-  - cursor 安装到 .cursor/rules/
+  - cursor 安装到仓库/项目根目录的 .cursor/rules/
+  - --check-installed 只检查目标目录与当前源码是否一致，不覆盖文件
 EOF
       exit 0
       ;;
@@ -52,6 +59,10 @@ EOF
       ;;
   esac
 done
+
+if [ -n "$PLATFORM" ]; then
+  PLATFORM="$(printf '%s' "$PLATFORM" | tr '[:upper:]' '[:lower:]')"
+fi
 
 if [ -z "$PLATFORM" ]; then
   if [ -d "$HOME/.openclaw" ]; then
@@ -77,11 +88,11 @@ case "$PLATFORM" in
   hermes)
     DEST="$HOME/.hermes/skills/$SKILL_NAME"
     ;;
-  universal|codex|qclaw|lobsterai|lobsterAI|workbuddy)
+  universal|codex|qclaw|lobsterai|workbuddy)
     DEST="$HOME/.agents/skills/$SKILL_NAME"
     ;;
   cursor)
-    DEST=".cursor/rules/$SKILL_NAME"
+    DEST="$PROJECT_ROOT/.cursor/rules/$SKILL_NAME"
     ;;
   *)
     echo "不支持的平台: $PLATFORM" >&2
@@ -101,6 +112,25 @@ if $DRY_RUN; then
   echo "[DRY-RUN] 将安装 $SKILL_NAME 到: $DEST"
   echo "[DRY-RUN] 不会发起网络请求，不会读取或写入手机号状态"
   exit 0
+fi
+
+if $CHECK_INSTALLED; then
+  if [ ! -e "$DEST" ]; then
+    echo "未找到已安装版本: $DEST"
+    exit 5
+  fi
+
+  DIFF_OUTPUT="$(mktemp)"
+  if diff -qr -x '__pycache__' -x '.DS_Store' "$SCRIPT_DIR" "$DEST" >"$DIFF_OUTPUT"; then
+    rm -f "$DIFF_OUTPUT"
+    echo "已安装版本与当前源码一致: $DEST"
+    exit 0
+  fi
+
+  echo "已安装版本与当前源码不一致: $DEST"
+  sed -n '1,20p' "$DIFF_OUTPUT"
+  rm -f "$DIFF_OUTPUT"
+  exit 4
 fi
 
 mkdir -p "$(dirname "$DEST")"
@@ -131,6 +161,8 @@ cat <<EOF
 隐私提示：
   - 普通推荐、门店和菜单查询不会自动复用缓存手机号。
   - 参与活动、查询活动状态、活动总览、订单查询或口味偏好分析时，手机号会发送到配置的后端；订单查询走专用订单接口；默认后端见 config/defaults.json。
+  - 本机缓存已确认领取成功后，不能更换手机号重复领取。
+  - 服务端只在领取成功后记录 IP 领取名额；同一 IP 在 3 个月活动周期内只允许一个手机号领取，同一 IP 10 分钟内领取尝试过多会被限流。
   - 可通过 XINYI_API_BASE_URL 指向你信任的后端。
   - 本地手机号状态默认保存到 ~/.xinyi-drink/state.json。
   - 清空缓存可运行：python3 "$DEST/scripts/recommend_drink.py" --clear-mobile
