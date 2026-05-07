@@ -8,7 +8,10 @@
     "查询菜单及饮品热量",
     "查询门店及等候时长"
   ],
-  "version": "1.2.4",
+  "version": "1.2.5",
+  "packageType": "executable-skill",
+  "instructionOnly": false,
+  "sourceDirectory": "skill",
   "author": "Xinyi",
   "license": "MIT",
   "homepage": "https://github.com/xinyi-drink/xinyi-drink",
@@ -65,6 +68,22 @@
     "dry_run": "install.sh --dry-run",
     "check_installed": "install.sh --check-installed",
     "writes_to": [
+      "~/.openclaw/skills/xinyi-drink",
+      "~/.agents/skills/xinyi-drink",
+      "~/.claude/skills/xinyi-drink",
+      "~/.hermes/skills/xinyi-drink",
+      ".cursor/rules/xinyi-drink"
+    ]
+  },
+  "installSpec": {
+    "packageType": "executable-skill",
+    "instructionOnly": false,
+    "sourceDirectory": "skill",
+    "type": "local-script",
+    "script": "install.sh",
+    "dryRun": "install.sh --dry-run",
+    "checkInstalled": "install.sh --check-installed",
+    "writesTo": [
       "~/.openclaw/skills/xinyi-drink",
       "~/.agents/skills/xinyi-drink",
       "~/.claude/skills/xinyi-drink",

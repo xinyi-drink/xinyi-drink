@@ -17,6 +17,17 @@ keywords:
   - 订单
   - 历史订单
   - 购买记录
+packageType: executable-skill
+instructionOnly: false
+sourceDirectory: skill
+installSpec:
+  packageType: executable-skill
+  instructionOnly: false
+  sourceDirectory: skill
+  type: local-script
+  script: install.sh
+  dryRun: install.sh --dry-run
+  checkInstalled: install.sh --check-installed
 metadata:
   openclaw:
     packageType: executable-skill
@@ -95,7 +106,7 @@ metadata:
       explicitIntentRequired:
         - claim_reward
         - query_orders
-version: 1.2.4
+version: 1.2.5
 ---
 # /xinyi-drink — 新一好喝咖啡茶饮Skill
 
@@ -138,8 +149,9 @@ Agent 会自动帮你安装好。
 
 ## 隐私与手机号使用
 
-- 手机号会保存到本机 `~/.xinyi-drink/state.json`，保存内容为手机号、活动状态和更新时间，供后续合规场景复用。
-- 手机号会发送到配置的后端，用于领取礼包、同步活动状态、查询个人订单、活动总览、口味偏好分析或明确个性化推荐。
+- 手机号会保存到本机 `~/.xinyi-drink/state.json`，保存内容为手机号、活动状态和更新时间；同一机器或同一 Agent profile 的后续合规请求可能复用或展示该手机号。
+- 手机号会发送到配置的后端，用于领取礼包、同步活动状态、查询个人订单、活动总览、口味偏好分析或明确个性化推荐；`claim_reward.py` 是状态变更工具，只能在用户明确要求领取、确认继续领取或确认同步活动结果时调用。
+- 订单查询会返回个人订单历史，只能在用户明确询问本人订单、购买记录、饮品历史、取餐或口味偏好分析时调用；服务端必须负责小程序绑定手机号的账号归属和订单访问控制。
 - 活动状态查询、订单查询、活动总览、口味偏好分析或明确个性化推荐可以复用本机缓存手机号。
 - 用户询问本机保存的参与活动手机号或活动状态时，只读取本地状态：`python3 scripts/recommend_drink.py --show-mobile-status`，不要请求后端，也不要凭 Agent 记忆回答；不要查 Agent 记忆、历史记忆或对话记忆。
 - 领取礼包和查询订单只接受用户本人的【新一咖啡】绑定手机号；用户明确表示代查或使用他人手机号时，不调用领取或订单脚本。
