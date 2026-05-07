@@ -80,7 +80,7 @@ def build_realtime_unavailable_lines(scope: str, error: Any) -> list[str]:
     return [
         f"{scope}暂时没拿到：{error}",
         "可以继续回答品牌能力、领取流程或推荐思路，但必须明确这不是实时门店/菜单结果。",
-        "活动/手机号领取仍以领取查询结果为准；不要猜用户是否已参加或券是否已到账。",
+        "未确认状态的活动/手机号领取以领取查询结果为准；本地已确认领取的手机号以本地状态优先；不要猜用户是否已参加或券是否已到账。",
         "门店、菜单、价格、库存和排队信息不要编造；建议稍后重试或打开小程序确认。",
     ]
 
@@ -294,6 +294,14 @@ def format_order_state(state: Any) -> str:
 
 
 def build_activity_completion_lines(kind: str, coupon_names: list[str]) -> list[str]:
+    if kind == "already_claimed":
+        return [
+            "该手机号已经领取过 Skill用户大礼包。",
+            f"已领取内容：小龙虾贴纸（到任意门店对暗号【小龙虾】领取，先到先得）；Skill用户身份标识；{format_coupon_reward(coupon_names)}。",
+            *ACTIVITY_RULE_LINES,
+            "你已经领取礼包，现在可以查看你过去的订单信息。",
+        ]
+
     if is_joined_claim_kind(kind):
         return [
             "身份验证成功。Skill用户大礼包已发放到账：",
@@ -586,9 +594,10 @@ def render_claim_result(
     lines: list[str] = []
 
     if is_joined_claim_kind(kind):
-        title = "领取结果：身份验证成功"
+        title = "领取结果：已领取过" if kind == "already_claimed" else "领取结果：身份验证成功"
         lines.extend(build_activity_completion_lines(kind, coupon_names))
-        lines.extend(build_claim_detail_lines(data, items))
+        if kind != "already_claimed" or items:
+            lines.extend(build_claim_detail_lines(data, items))
     elif kind == "no_reward_config":
         title = "领取方式"
         lines.extend(build_activity_flow_lines())

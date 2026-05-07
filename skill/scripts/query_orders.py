@@ -67,26 +67,21 @@ def build_order_rating_lines(cup_count: int) -> list[str]:
         return []
     if cup_count <= 2:
         return [
-            "Level 1",
             f"你已经在新一咖啡点单{cup_count}杯，欢迎开启美味体验！",
         ]
     if cup_count <= 5:
         return [
-            "Level 2",
             f"你已经在新一咖啡点单{cup_count}杯，我们越来越有默契了！",
         ]
     if cup_count <= 10:
         return [
-            "Level 3",
             f"你已经在新一咖啡点单{cup_count}杯，你一定是新一咖啡的忠实铁粉吧！",
         ]
     if cup_count < 15:
         return [
-            "Level 4",
             f"你已经在新一咖啡点单{cup_count}杯，简直是我们的超级品鉴官！",
         ]
     return [
-        "Level 5",
         f"你已经在新一咖啡点单{cup_count}杯，你不仅懂咖啡，有品位，更是新一不可或缺的灵魂伴侣，殿堂级知音！",
     ]
 
@@ -188,8 +183,7 @@ def render_orders_result(orders_data: dict[str, Any]) -> str:
         render_text_section("订单摘要", build_order_summary_lines(orders_data)),
     ]
     if rating_lines:
-        level, message = rating_lines
-        sections.append(render_text_section("给用户的订单等级", [f"{level}：{message}"]))
+        sections.append(render_text_section("给用户的订单等级", rating_lines))
     return "\n\n".join(sections)
 
 

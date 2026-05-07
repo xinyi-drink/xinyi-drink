@@ -97,11 +97,26 @@ def main() -> int:
         sys.stdout.write(render_session_claim_locked(saved_mobile))
         return 0
 
+    previous_activity_joined = load_activity_joined(resolved_mobile)
+    if previous_activity_joined is True:
+        debug_log(args.debug, "resolved mobile already claimed in local state; skipping backend")
+        sys.stdout.write(
+            render_claim_result(
+                {
+                    "kind": "already_claimed",
+                    "requestedMobile": resolved_mobile,
+                    "items": [],
+                    "user": {"mobile": resolved_mobile},
+                },
+                None,
+            )
+        )
+        return 0
+
     config = load_config()
     base_url = config["apiBaseUrl"].rstrip("/")
     url = build_url(base_url, "/skill/xinyi/claim")
     debug_log(args.debug, f"posting claim request to {url}")
-    previous_activity_joined = load_activity_joined(resolved_mobile)
 
     try:
         parsed = post_json(url, config["timeoutSeconds"], {"mobile": resolved_mobile})

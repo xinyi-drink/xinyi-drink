@@ -41,7 +41,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         _post_json_mock,
         _load_config_mock,
     ) -> None:
-        self.load_activity_joined_mock.return_value = True
+        self.load_activity_joined_mock.return_value = None
         stdout = io.StringIO()
 
         with patch.object(
@@ -54,6 +54,38 @@ class ClaimRewardScriptTest(unittest.TestCase):
         # 与其它读类脚本对齐：网络失败输出可读降级文案，退出码 0。
         self.assertEqual(exit_code, 0)
         self.assertIn("领取活动失败：网络请求失败", stdout.getvalue())
+        self.mark_activity_joined_mock.assert_not_called()
+        self.mark_activity_not_joined_mock.assert_not_called()
+
+    @patch.object(claim_reward, "post_json")
+    def test_claim_script_uses_local_claimed_state_before_backend_for_same_mobile(
+        self,
+        post_json_mock,
+    ) -> None:
+        self.load_mobile_mock.return_value = "15712459595"
+
+        def load_activity_joined(mobile: str | None) -> bool | None:
+            return mobile == "15712459595"
+
+        self.load_activity_joined_mock.side_effect = load_activity_joined
+        stdout = io.StringIO()
+
+        with patch.object(
+            sys,
+            "argv",
+            ["claim_reward.py", "--mobile", "15712459595"],
+        ), patch("sys.stdout", stdout):
+            exit_code = claim_reward.main()
+
+        output = stdout.getvalue()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("领取结果：已领取过", output)
+        self.assertIn("该手机号已经领取过 Skill用户大礼包", output)
+        self.assertIn("已领取内容：小龙虾贴纸", output)
+        self.assertIn("Skill用户身份标识", output)
+        self.assertIn("Skill用户专享赠饮券", output)
+        post_json_mock.assert_not_called()
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_not_called()
 
@@ -370,15 +402,13 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("领取结果：身份验证成功", output)
-        self.assertIn("身份验证成功。Skill用户大礼包已发放到账", output)
+        self.assertIn("领取结果：已领取过", output)
+        self.assertIn("该手机号已经领取过 Skill用户大礼包", output)
         self.assertIn("小龙虾贴纸（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("Skill用户专享赠饮券（具体饮品以小程序卡券为准）", output)
         self.assertIn("Skill用户身份标识", output)
-        self.assertIn("系统识别该手机号已参与/已领取，本次没有新的券发放。", output)
         self.assertNotIn("成功失败数量", output)
         self.assertNotIn("您已参与活动啦", output)
-        self.assertNotIn("已经领过", output)
         self.assertNotIn("未找到登录用户", output)
         self.mark_activity_joined_mock.assert_called_once_with("18210234223")
         self.mark_activity_not_joined_mock.assert_not_called()
@@ -632,7 +662,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         output = stdout.getvalue()
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("身份验证成功。Skill用户大礼包已发放到账", output)
+        self.assertIn("该手机号已经领取过 Skill用户大礼包", output)
         self.assertIn("小龙虾贴纸（到任意门店对暗号【小龙虾】领取，先到先得）", output)
         self.assertIn("Skill用户专享赠饮券「苦尽甘来拿铁」", output)
         self.assertIn("Skill用户身份标识", output)
@@ -700,6 +730,7 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("今天建议您喝苦尽甘来拿铁", output)
         self.assertNotIn("今天天气", output)
+        self.assertIn("该手机号已经领取过 Skill用户大礼包", output)
         self.mark_activity_joined_mock.assert_called_once_with("15712459595")
         self.mark_activity_not_joined_mock.assert_not_called()
 
@@ -811,19 +842,10 @@ class ClaimRewardScriptTest(unittest.TestCase):
         self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_not_called()
 
-    @patch.object(
-        claim_reward,
-        "load_config",
-        return_value={
-            "apiBaseUrl": "http://127.0.0.1:8020",
-            "timeoutSeconds": 5,
-        },
-    )
     @patch("urllib.request.urlopen")
     def test_claim_script_can_reuse_saved_mobile_for_status_query(
         self,
         urlopen_mock,
-        _load_config_mock,
     ) -> None:
         self.load_mobile_mock.return_value = "15712459595"
 
@@ -831,16 +853,6 @@ class ClaimRewardScriptTest(unittest.TestCase):
             return True if mobile == "15712459595" else None
 
         self.load_activity_joined_mock.side_effect = load_activity_joined
-        response = urlopen_mock.return_value.__enter__.return_value
-        response.read.return_value = (
-            '{"code":200,"data":{"kind":"already_claimed","successCount":0,"failCount":0,'
-            '"items":[],"user":{"id":1,"mobile":"15712459595","nickname":"双龙"}}}'
-        ).encode("utf-8")
-        urlopen_mock.side_effect = [
-            urlopen_mock.return_value,
-            RuntimeError("context api down"),
-        ]
-
         stdout = io.StringIO()
         stderr = io.StringIO()
 
@@ -853,8 +865,11 @@ class ClaimRewardScriptTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertIn("DEBUG claim_reward: resolved mobile from local state", stderr.getvalue())
-        self.assertIn("身份验证成功。Skill用户大礼包已发放到账", stdout.getvalue())
-        self.mark_activity_joined_mock.assert_called_once_with("15712459595")
+        self.assertIn("DEBUG claim_reward: resolved mobile already claimed in local state; skipping backend", stderr.getvalue())
+        self.assertIn("领取结果：已领取过", stdout.getvalue())
+        self.assertIn("该手机号已经领取过 Skill用户大礼包", stdout.getvalue())
+        urlopen_mock.assert_not_called()
+        self.mark_activity_joined_mock.assert_not_called()
         self.mark_activity_not_joined_mock.assert_not_called()
 
     @patch.object(claim_reward, "post_json")

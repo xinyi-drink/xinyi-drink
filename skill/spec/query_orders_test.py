@@ -100,8 +100,8 @@ class QueryOrdersScriptTest(unittest.TestCase):
         self.assertIn("已完成订单数：1单。", output)
         self.assertIn("可见饮品杯数：3杯。", output)
         self.assertIn("## 给用户的订单等级", output)
-        self.assertIn("Level 2：你已经在新一咖啡点单3杯，我们越来越有默契了！", output)
         self.assertIn("你已经在新一咖啡点单3杯，我们越来越有默契了！", output)
+        self.assertNotIn("Level 2", output)
         self.assertIn("买过的饮品：苦尽甘来拿铁、花魁毛尖、桂花美式。", output)
         self.assertIn("可确认咖啡相关杯数：1杯。", output)
         self.assertIn("混合订单里还有无法精确计杯的咖啡相关饮品：苦尽甘来拿铁。", output)
@@ -118,31 +118,30 @@ class QueryOrdersScriptTest(unittest.TestCase):
 
     def test_order_rating_uses_non_overlapping_cup_levels(self) -> None:
         cases = [
-            (1, "Level 1", "你已经在新一咖啡点单1杯，欢迎开启美味体验！"),
-            (2, "Level 1", "你已经在新一咖啡点单2杯，欢迎开启美味体验！"),
-            (3, "Level 2", "你已经在新一咖啡点单3杯，我们越来越有默契了！"),
-            (5, "Level 2", "你已经在新一咖啡点单5杯，我们越来越有默契了！"),
-            (6, "Level 3", "你已经在新一咖啡点单6杯，你一定是新一咖啡的忠实铁粉吧！"),
-            (10, "Level 3", "你已经在新一咖啡点单10杯，你一定是新一咖啡的忠实铁粉吧！"),
-            (11, "Level 4", "你已经在新一咖啡点单11杯，简直是我们的超级品鉴官！"),
-            (14, "Level 4", "你已经在新一咖啡点单14杯，简直是我们的超级品鉴官！"),
+            (1, "你已经在新一咖啡点单1杯，欢迎开启美味体验！"),
+            (2, "你已经在新一咖啡点单2杯，欢迎开启美味体验！"),
+            (3, "你已经在新一咖啡点单3杯，我们越来越有默契了！"),
+            (5, "你已经在新一咖啡点单5杯，我们越来越有默契了！"),
+            (6, "你已经在新一咖啡点单6杯，你一定是新一咖啡的忠实铁粉吧！"),
+            (10, "你已经在新一咖啡点单10杯，你一定是新一咖啡的忠实铁粉吧！"),
+            (11, "你已经在新一咖啡点单11杯，简直是我们的超级品鉴官！"),
+            (14, "你已经在新一咖啡点单14杯，简直是我们的超级品鉴官！"),
             (
                 15,
-                "Level 5",
                 "你已经在新一咖啡点单15杯，你不仅懂咖啡，有品位，更是新一不可或缺的灵魂伴侣，殿堂级知音！",
             ),
         ]
 
-        for cup_count, level, message in cases:
+        for cup_count, message in cases:
             with self.subTest(cup_count=cup_count):
                 lines = query_orders.build_order_rating_lines(cup_count)
 
-                self.assertEqual(lines, [level, message])
+                self.assertEqual(lines, [message])
 
     def test_zero_cups_do_not_output_order_rating(self) -> None:
         self.assertEqual(query_orders.build_order_rating_lines(0), [])
 
-    def test_render_orders_result_prominently_outputs_level_three_for_nine_cups(self) -> None:
+    def test_render_orders_result_outputs_rating_copy_without_level_label(self) -> None:
         output = query_orders.render_orders_result(
             {
                 "orders": [
@@ -165,7 +164,8 @@ class QueryOrdersScriptTest(unittest.TestCase):
         )
 
         self.assertIn("## 给用户的订单等级", output)
-        self.assertIn("Level 3：你已经在新一咖啡点单9杯，你一定是新一咖啡的忠实铁粉吧！", output)
+        self.assertIn("你已经在新一咖啡点单9杯，你一定是新一咖啡的忠实铁粉吧！", output)
+        self.assertNotIn("Level 3", output)
 
     def test_english_coffee_keywords_are_shared_with_preference_tags(self) -> None:
         self.assertTrue(query_orders.is_coffee_name("Espresso Tonic"))

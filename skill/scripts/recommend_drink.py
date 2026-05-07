@@ -5,6 +5,7 @@ import argparse
 import sys
 
 from build_response import (
+    ACTIVITY_GIFT_SUMMARY,
     is_activity_query,
     is_order_query,
     render_recommendation_context,
@@ -80,7 +81,7 @@ def render_mobile_status(candidate_mobile: str | None = None) -> str:
 
     activity_joined = state.get("activityJoined")
     if activity_joined is True:
-        activity_label = "已参与"
+        activity_label = "已领取过"
     elif activity_joined is False:
         activity_label = "未参与"
     else:
@@ -93,6 +94,8 @@ def render_mobile_status(candidate_mobile: str | None = None) -> str:
     updated_at = state.get("updatedAt")
     if updated_at:
         lines.append(f"缓存更新时间：{updated_at}")
+    if activity_joined is True:
+        lines.append(f"已领取内容：{ACTIVITY_GIFT_SUMMARY}")
 
     if candidate_mobile:
         lines.append(f"候选手机号：{candidate_mobile}")
