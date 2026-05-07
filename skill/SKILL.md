@@ -90,7 +90,7 @@ metadata:
       explicitIntentRequired:
         - claim_reward
         - query_orders
-version: 1.1.20
+version: 1.2.0
 ---
 # /xinyi-drink — 新一好喝咖啡茶饮Skill
 
@@ -133,6 +133,7 @@ Agent 会自动帮你安装好。
 - 手机号会保存到本机 `~/.xinyi-drink/state.json`，保存内容为手机号、活动状态和更新时间，供后续合规场景复用。
 - 手机号会发送到配置的后端，用于领取礼包、同步活动状态、查询个人订单、活动总览、口味偏好分析或明确个性化推荐。
 - 活动状态查询、订单查询、活动总览、口味偏好分析或明确个性化推荐可以复用本机缓存手机号。
+- 用户询问本机保存的参与活动手机号或活动状态时，只读取本地状态：`python3 scripts/recommend_drink.py --show-mobile-status`，不要请求后端，也不要凭 Agent 记忆回答。
 - 普通推荐、门店和菜单查询不要复用缓存手机号，也不要主动索要手机号。
 - 只使用用户自己的手机号；共享机器上建议用完后清空缓存。
 - 用户要求清空缓存时，运行：`python3 scripts/recommend_drink.py --clear-mobile`。
@@ -143,6 +144,7 @@ Agent 会自动帮你安装好。
 | --- | --- |
 | “帮我领取新一Skill福利”“大礼包怎么领取”“我想领福利” | 无手机号先请求用户发送【新一咖啡】绑定手机号；有手机号调用 `scripts/claim_reward.py --mobile <手机号>` |
 | “这个手机号领过了吗”“我登录小程序了”“换个手机号” | 用户本轮提供手机号时调用 `scripts/claim_reward.py --mobile <手机号>`；未提供手机号且已有缓存时可调用 `scripts/claim_reward.py --use-saved-mobile` 同步状态 |
+| “参与活动手机号是多少”“本机保存的手机号是什么”“新一咖啡缓存手机号是什么”“活动状态是什么” | 调用 `scripts/recommend_drink.py --show-mobile-status`，只读本地缓存，不请求后端，不凭 Agent 记忆回答 |
 | 个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录；不要求用户说出“订单”两个字，如“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“我的饮品做好了吗” | 调用 `scripts/query_orders.py --use-saved-mobile --query <问题>`；用户本轮提供手机号时改用 `--mobile <手机号>`；问正在进行中订单加 `--status 2`，问历史/已完成订单加 `--status 4`，否则不传 status 查全部 |
 | “新一咖啡有哪些门店”“望京店目前有多少杯待做，等待时间多久” | 调用 `scripts/fetch_stores.py` |
 | “某某饮品热量多少”“有哪些不太甜的果茶” | 调用 `scripts/recommend_drink.py --query <问题>` |

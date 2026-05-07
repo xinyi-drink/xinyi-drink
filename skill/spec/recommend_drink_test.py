@@ -50,6 +50,71 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         load_mobile_mock.assert_not_called()
         self.load_activity_joined_mock.assert_not_called()
 
+    def test_show_mobile_status_reads_local_state_without_fetching_context(self) -> None:
+        stdout = io.StringIO()
+
+        with patch.object(
+            recommend_drink,
+            "load_state",
+            return_value={
+                "mobile": "18210234223",
+                "activityJoined": True,
+                "updatedAt": "2026-05-07T03:00:00+00:00",
+            },
+        ) as load_state_mock, patch.object(
+            recommend_drink,
+            "fetch_json",
+        ) as fetch_json_mock, patch.object(
+            recommend_drink,
+            "load_config",
+        ) as load_config_mock, patch.object(
+            recommend_drink,
+            "load_mobile",
+        ) as load_mobile_mock, patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--show-mobile-status"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn("本地已保存手机号：18210234223", output)
+        self.assertIn("活动状态：已参与", output)
+        self.assertIn("缓存更新时间：2026-05-07T03:00:00+00:00", output)
+        load_state_mock.assert_called_once_with()
+        fetch_json_mock.assert_not_called()
+        load_config_mock.assert_not_called()
+        load_mobile_mock.assert_not_called()
+        self.load_activity_joined_mock.assert_not_called()
+
+    def test_show_mobile_status_handles_missing_local_state(self) -> None:
+        stdout = io.StringIO()
+
+        with patch.object(
+            recommend_drink,
+            "load_state",
+            return_value={},
+        ) as load_state_mock, patch.object(
+            recommend_drink,
+            "fetch_json",
+        ) as fetch_json_mock, patch.object(
+            recommend_drink,
+            "load_config",
+        ) as load_config_mock, patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--show-mobile-status"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("本地未保存新一咖啡手机号。", stdout.getvalue())
+        load_state_mock.assert_called_once_with()
+        fetch_json_mock.assert_not_called()
+        load_config_mock.assert_not_called()
+        self.load_activity_joined_mock.assert_not_called()
+
     @patch.object(recommend_drink, "post_json", create=True)
     @patch.object(recommend_drink, "load_mobile", return_value=None)
     @patch.object(

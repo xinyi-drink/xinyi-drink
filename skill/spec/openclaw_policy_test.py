@@ -43,7 +43,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("permissions: \"0600 when supported\"", frontmatter)
         self.assertIn("clearCommand: python3 scripts/recommend_drink.py --clear-mobile", frontmatter)
         self.assertIn("sharedMachineWarning: true", frontmatter)
-        self.assertIn("version: 1.1.20", frontmatter)
+        self.assertIn("version: 1.2.0", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -67,6 +67,8 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("最终回答必须展示脚本给出的等级句", skill_md)
         self.assertIn("手机号会保存到本机 `~/.xinyi-drink/state.json`", skill_md)
         self.assertIn("活动状态查询、订单查询、活动总览、口味偏好分析或明确个性化推荐可以复用本机缓存手机号", skill_md)
+        self.assertIn("python3 scripts/recommend_drink.py --show-mobile-status", skill_md)
+        self.assertIn("不要请求后端，也不要凭 Agent 记忆回答", skill_md)
         self.assertIn("普通推荐、门店和菜单查询不要复用缓存手机号", skill_md)
         self.assertIn("手机号会发送到配置的后端", skill_md)
         self.assertIn("只使用用户自己的手机号", skill_md)
@@ -84,7 +86,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn('"version": "1.1.20"', json.dumps(payload, ensure_ascii=False))
+        self.assertIn('"version": "1.2.0"', json.dumps(payload, ensure_ascii=False))
         self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")
@@ -157,6 +159,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("望京店目前有多少杯待做", tool_descriptions["fetch_stores"])
         self.assertIn("默认不读取本地缓存手机号", tool_descriptions["recommend_drink"])
         self.assertIn("useSavedMobile", tool_descriptions["recommend_drink"])
+        self.assertIn("showMobileStatus", tool_descriptions["recommend_drink"])
         self.assertIn("某某饮品热量多少", tool_descriptions["recommend_drink"])
         self.assertIn("有哪些不太甜的果茶", tool_descriptions["recommend_drink"])
         self.assertIn("我买过多少杯", tool_descriptions["query_orders"])
@@ -198,6 +201,7 @@ class OpenClawPolicyTest(unittest.TestCase):
             if tool["name"] == "recommend_drink"
         )
         self.assertIn("useSavedMobile", recommend_schema["properties"])
+        self.assertIn("showMobileStatus", recommend_schema["properties"])
         self.assertIn("默认不读取缓存手机号", payload["localStorage"]["autoReadPolicy"])
 
     def test_recommend_drink_does_not_claim_or_read_saved_mobile_by_default(self) -> None:

@@ -16,6 +16,7 @@ from user_state import (
     clear_mobile,
     load_activity_joined,
     load_mobile,
+    load_state,
 )
 
 
@@ -63,6 +64,31 @@ def is_personalized_query(args) -> bool:
     )
 
 
+def render_mobile_status() -> str:
+    state = load_state()
+    mobile = state.get("mobile")
+    if not isinstance(mobile, str) or not mobile.strip():
+        return "本地未保存新一咖啡手机号。\n"
+
+    activity_joined = state.get("activityJoined")
+    if activity_joined is True:
+        activity_label = "已参与"
+    elif activity_joined is False:
+        activity_label = "未参与"
+    else:
+        activity_label = "未确认"
+
+    lines = [
+        f"本地已保存手机号：{mobile}",
+        f"活动状态：{activity_label}",
+    ]
+    updated_at = state.get("updatedAt")
+    if updated_at:
+        lines.append(f"缓存更新时间：{updated_at}")
+
+    return "\n".join(lines) + "\n"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="获取聚合推荐上下文，并整理成可直接提供给大模型的文本/表格"
@@ -78,6 +104,11 @@ def main() -> int:
         action="store_true",
         help="清空已保存的手机号，下次不再自动带出",
     )
+    parser.add_argument(
+        "--show-mobile-status",
+        action="store_true",
+        help="只读取本地缓存手机号和活动状态，不请求后端",
+    )
     parser.add_argument("--query", help="用户问题或饮品名称")
     parser.add_argument("--scene", help="场景，如提神、下午茶、轻负担")
     parser.add_argument("--preference", help="偏好，如咖啡、茶、低卡")
@@ -88,6 +119,11 @@ def main() -> int:
         clear_mobile()
         debug_log(args.debug, "cleared saved mobile")
         sys.stdout.write("已清空本地手机号缓存和活动状态。\n")
+        return 0
+
+    if args.show_mobile_status:
+        debug_log(args.debug, "showing saved mobile status from local state")
+        sys.stdout.write(render_mobile_status())
         return 0
 
     resolved_mobile = args.mobile

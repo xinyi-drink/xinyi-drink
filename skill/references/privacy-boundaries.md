@@ -26,6 +26,7 @@
 - 状态文件写入后会尽量设置为 `0600` 权限，只允许当前用户读写。
 - 状态结构为 `{mobile, activityJoined, updatedAt}`；`activityJoined=true/false` 分别表示接口已确认参加/未参加，状态缺失或 `null` 表示当前没有可复用的确认状态。
 - 本机缓存已确认某手机号领取成功后，Skill 不允许换成另一个手机号重复领取。
+- 用户询问本机保存的手机号或活动状态时，运行 `python3 scripts/recommend_drink.py --show-mobile-status` 本地读取，不请求后端，不依赖 Agent 记忆。
 - 用户可运行 `python3 scripts/recommend_drink.py --clear-mobile` 清空当前缓存手机号和活动状态。
 - 共享机器或共享 Agent profile 上使用后，建议立即运行清缓存命令，避免后续用户误用已保存手机号。
 

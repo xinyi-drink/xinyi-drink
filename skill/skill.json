@@ -8,7 +8,7 @@
     "查询菜单及饮品热量",
     "查询门店及等候时长"
   ],
-  "version": "1.1.20",
+  "version": "1.2.0",
   "author": "Xinyi",
   "license": "MIT",
   "homepage": "https://github.com/xinyi-drink/xinyi-drink",
@@ -197,7 +197,7 @@
       "name": "recommend_drink",
       "display_name": "查询菜单及饮品热量",
       "script": "scripts/recommend_drink.py",
-      "description": "获取商品、天气和可选订单历史，整理成可供 Agent 查询菜单、饮品热量和推荐尝试的上下文。用户问“某某饮品热量多少”“有哪些不太甜的果茶”“有什么活动”时使用；个性化推荐时把常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品。用户问个人订单、购买记录、喝过/买过/点过什么、取餐或制作状态时改用 query_orders。默认不读取本地缓存手机号，也不聚合门店；只有活动总览等明确个性化场景才使用内部 useSavedMobile。",
+      "description": "获取商品、天气和可选订单历史，整理成可供 Agent 查询菜单、饮品热量和推荐尝试的上下文。用户问“某某饮品热量多少”“有哪些不太甜的果茶”“有什么活动”时使用；用户问本机保存的参与活动手机号或活动状态时使用 showMobileStatus，只读本地缓存且不请求后端。个性化推荐时把常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品。用户问个人订单、购买记录、喝过/买过/点过什么、取餐或制作状态时改用 query_orders。默认不读取本地缓存手机号，也不聚合门店；只有活动总览等明确个性化场景才使用内部 useSavedMobile。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -208,6 +208,10 @@
           "useSavedMobile": {
             "type": "boolean",
             "description": "内部选项；仅活动总览或明确个性化推荐场景复用本地手机号，普通推荐不要使用"
+          },
+          "showMobileStatus": {
+            "type": "boolean",
+            "description": "内部选项；仅查询本机保存的手机号和活动状态，不请求后端"
           },
           "query": {
             "type": "string",
