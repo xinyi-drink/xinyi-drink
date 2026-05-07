@@ -160,10 +160,12 @@ cat <<EOF
 
 隐私提示：
   - 普通推荐、门店和菜单查询不会自动复用缓存手机号。
+  - 领取礼包和查询订单只接受本人手机号；明确代查或使用他人手机号时不要调用领取或订单脚本。
   - 参与活动、查询活动状态、活动总览、订单查询或口味偏好分析时，手机号会发送到配置的后端；订单查询走专用订单接口；默认后端见 config/defaults.json。
   - 本机缓存已确认领取成功后，不能更换手机号重复领取；换号、改号或重新绑定必须走 claim_reward.py 本地校验。
   - 领取结果以服务端响应为准；最终用户回答不要主动解释内部领取规则。
   - 可通过 XINYI_API_BASE_URL 指向你信任的后端。
   - 本地手机号状态默认保存到 ~/.xinyi-drink/state.json。
   - 清空缓存可运行：python3 "$DEST/scripts/recommend_drink.py" --clear-mobile
+  - 核对安装目录可先运行 install.sh --dry-run；检查已安装副本可运行 install.sh --check-installed。
 EOF

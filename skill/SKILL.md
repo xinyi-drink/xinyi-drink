@@ -33,6 +33,7 @@ metadata:
       type: local-script
       script: install.sh
       dryRun: install.sh --dry-run
+      checkInstalled: install.sh --check-installed
       writesTo:
         - ~/.openclaw/skills/xinyi-drink
       postInstallPrompts:
@@ -47,6 +48,7 @@ metadata:
       type: local-script
       script: install.sh
       dryRun: install.sh --dry-run
+      checkInstalled: install.sh --check-installed
     runtime:
       type: python-scripts
       requiresNetwork: true
@@ -87,10 +89,13 @@ metadata:
       userGuidance:
         - only-use-your-own-phone-number
         - clear-cache-on-shared-machines
+        - server-side-account-ownership-check-required
+      backendTrustRequired: true
+      thirdPartyPhonePolicy: reject-claim-and-order-query
       explicitIntentRequired:
         - claim_reward
         - query_orders
-version: 1.2.0
+version: 1.2.1
 ---
 # /xinyi-drink — 新一好喝咖啡茶饮Skill
 
@@ -128,12 +133,16 @@ version: 1.2.0
 
 Agent 会自动帮你安装好。
 
+开发或审查安装目录时，可先运行 `install.sh --dry-run`；已安装后可运行 `install.sh --check-installed` 检查目标目录是否与当前源码一致。
+
 ## 隐私与手机号使用
 
 - 手机号会保存到本机 `~/.xinyi-drink/state.json`，保存内容为手机号、活动状态和更新时间，供后续合规场景复用。
 - 手机号会发送到配置的后端，用于领取礼包、同步活动状态、查询个人订单、活动总览、口味偏好分析或明确个性化推荐。
 - 活动状态查询、订单查询、活动总览、口味偏好分析或明确个性化推荐可以复用本机缓存手机号。
 - 用户询问本机保存的参与活动手机号或活动状态时，只读取本地状态：`python3 scripts/recommend_drink.py --show-mobile-status`，不要请求后端，也不要凭 Agent 记忆回答。
+- 领取礼包和查询订单只接受用户本人的【新一咖啡】绑定手机号；用户明确表示代查或使用他人手机号时，不调用领取或订单脚本。
+- 覆盖默认后端前必须确认 `XINYI_API_BASE_URL` 可信，不要指向不信任后端。
 - 普通推荐、门店和菜单查询不要复用缓存手机号，也不要主动索要手机号。
 - 只使用用户自己的手机号；共享机器上建议用完后清空缓存。
 - 用户要求清空缓存时，运行：`python3 scripts/recommend_drink.py --clear-mobile`。

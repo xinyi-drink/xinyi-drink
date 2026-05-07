@@ -43,7 +43,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("permissions: \"0600 when supported\"", frontmatter)
         self.assertIn("clearCommand: python3 scripts/recommend_drink.py --clear-mobile", frontmatter)
         self.assertIn("sharedMachineWarning: true", frontmatter)
-        self.assertIn("version: 1.2.0", frontmatter)
+        self.assertIn("version: 1.2.1", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -76,6 +76,40 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("不要输出发放统计明细等技术化表述", skill_md)
         self.assertIn("实时接口失败", skill_md)
         self.assertNotIn("如果你在附近", skill_md)
+
+    def test_static_scan_guidance_declares_boundaries_without_behavior_changes(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+        repo_root = skill_root.parents[0]
+        skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        privacy = (skill_root / "references" / "privacy-boundaries.md").read_text(encoding="utf-8")
+        readme = (repo_root / "README.md").read_text(encoding="utf-8")
+        payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
+
+        self.assertIn("领取礼包和查询订单只接受用户本人的【新一咖啡】绑定手机号", skill_md)
+        self.assertIn("用户明确表示代查或使用他人手机号时，不调用领取或订单脚本", skill_md)
+        self.assertIn("`install.sh --dry-run`", skill_md)
+        self.assertIn("`install.sh --check-installed`", skill_md)
+
+        self.assertTrue(payload["privacy"]["backend_trust_required"])
+        self.assertIn("server-side-account-ownership-check-required", payload["privacy"]["user_guidance"])
+        self.assertEqual(
+            payload["privacy"]["third_party_phone_policy"],
+            "reject-claim-and-order-query",
+        )
+        self.assertEqual(payload["install"]["check_installed"], "install.sh --check-installed")
+        self.assertEqual(payload["install_spec"]["install"]["check_installed"], "install.sh --check-installed")
+        self.assertEqual(payload["openclaw"]["installSpec"]["checkInstalled"], "install.sh --check-installed")
+
+        annotations = {tool["name"]: tool["annotations"] for tool in payload["tools"]}
+        for tool_name in ("claim_reward", "query_orders"):
+            self.assertTrue(annotations[tool_name]["requiresUserOwnedPhone"])
+            self.assertTrue(annotations[tool_name]["rejectThirdPartyPhone"])
+            self.assertEqual(annotations[tool_name]["trustBoundary"], "xinyi-backend")
+
+        self.assertIn("用户明确表示代查或使用他人手机号时，不调用领取或订单脚本", privacy)
+        self.assertIn("不要把 `XINYI_API_BASE_URL` 指向不信任后端", privacy)
+        self.assertIn("安装前可先运行 `bash skill/install.sh --dry-run --platform openclaw`", readme)
+        self.assertIn("已安装后可运行 `bash skill/install.sh --platform codex --check-installed`", readme)
 
     def test_mobile_switch_intents_are_forced_through_claim_reward(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -116,7 +150,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn('"version": "1.2.0"', json.dumps(payload, ensure_ascii=False))
+        self.assertIn('"version": "1.2.1"', json.dumps(payload, ensure_ascii=False))
         self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")

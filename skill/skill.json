@@ -8,7 +8,7 @@
     "查询菜单及饮品热量",
     "查询门店及等候时长"
   ],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Xinyi",
   "license": "MIT",
   "homepage": "https://github.com/xinyi-drink/xinyi-drink",
@@ -63,6 +63,7 @@
     "type": "local-script",
     "script": "install.sh",
     "dry_run": "install.sh --dry-run",
+    "check_installed": "install.sh --check-installed",
     "writes_to": [
       "~/.openclaw/skills/xinyi-drink",
       "~/.agents/skills/xinyi-drink",
@@ -79,6 +80,7 @@
       "type": "local-script",
       "script": "install.sh",
       "dry_run": "install.sh --dry-run",
+      "check_installed": "install.sh --check-installed",
       "writes_to": [
         "~/.openclaw/skills/xinyi-drink",
         "~/.agents/skills/xinyi-drink",
@@ -103,7 +105,7 @@
       "name": "claim_reward",
       "display_name": "领取Skill用户大礼包",
       "script": "scripts/claim_reward.py",
-      "description": "按用户提供的手机号，或在活动状态查询场景复用已保存手机号，查询小程序账号并领取Skill用户大礼包。用户问“帮我领取新一Skill福利”“大礼包怎么领取”“这个手机号领过了吗”“我登录小程序了”“换手机号”“改手机号”“重新绑定”“重新输入手机号”时使用；返回礼包状态和轻量饮品建议。本机缓存已确认领取成功后，不能更换手机号重复领取；换号场景不能由 Agent 文本判断，必须走脚本本地校验；最终回答不要解释内部领取规则，也不要输出发放统计明细等技术化表述。只有用户明确问门店时，才另行查询门店。",
+      "description": "按用户提供的本人手机号，或在活动状态查询场景复用已保存手机号，查询小程序账号并领取Skill用户大礼包。用户问“帮我领取新一Skill福利”“大礼包怎么领取”“这个手机号领过了吗”“我登录小程序了”“换手机号”“改手机号”“重新绑定”“重新输入手机号”时使用；用户明确表示代查或使用他人手机号时不要调用。返回礼包状态和轻量饮品建议。本机缓存已确认领取成功后，不能更换手机号重复领取；换号场景不能由 Agent 文本判断，必须走脚本本地校验；最终回答不要解释内部领取规则，也不要输出发放统计明细等技术化表述。只有用户明确问门店时，才另行查询门店。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -125,6 +127,9 @@
         "openWorldHint": true,
         "stateChanging": true,
         "requiresExplicitUserIntent": true,
+        "requiresUserOwnedPhone": true,
+        "rejectThirdPartyPhone": true,
+        "trustBoundary": "xinyi-backend",
         "personalData": [
           "mobile"
         ],
@@ -152,7 +157,7 @@
       "name": "query_orders",
       "display_name": "查询用户订单",
       "script": "scripts/query_orders.py",
-      "description": "按用户提供或已保存的手机号查询用户订单，覆盖全部订单、历史订单/已完成订单、正在进行中订单。只要用户在问自己的个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录，都使用本工具；不要求出现“订单”两个字。典型问法包括“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“看我的历史订单”“帮我分析我的口味偏好”。咖啡/饮品统计只是基于订单数据的回答方式，不是触发前提。订单信息只能基于本次查询结果，不能预估、估算或模糊处理。订单等级由脚本按本次查询到的杯数计算，最终回答必须展示脚本给出的等级句。",
+      "description": "按用户提供或已保存的本人手机号查询用户订单，覆盖全部订单、历史订单/已完成订单、正在进行中订单。只要用户在问自己的个人订单、下单、购买、消费、喝过、买过、点过、取餐、制作中或历史记录，都使用本工具；不要求出现“订单”两个字。用户明确表示代查或使用他人手机号时不要调用。典型问法包括“我买过多少杯”“我都定了哪些饮料”“我喝了多少咖啡”“看我的历史订单”“帮我分析我的口味偏好”。咖啡/饮品统计只是基于订单数据的回答方式，不是触发前提。订单信息只能基于本次查询结果，不能预估、估算或模糊处理。订单等级由脚本按本次查询到的杯数计算，最终回答必须展示脚本给出的等级句。",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -186,6 +191,8 @@
         "openWorldHint": true,
         "requiresExplicitUserIntent": true,
         "requiresUserOwnedPhone": true,
+        "rejectThirdPartyPhone": true,
+        "trustBoundary": "xinyi-backend",
         "personalData": [
           "mobile",
           "order_history"
@@ -293,8 +300,11 @@
     ],
     "user_guidance": [
       "only-use-your-own-phone-number",
-      "clear-cache-on-shared-machines"
+      "clear-cache-on-shared-machines",
+      "server-side-account-ownership-check-required"
     ],
+    "backend_trust_required": true,
+    "third_party_phone_policy": "reject-claim-and-order-query",
     "explicit_intent_required_for": [
       "claim_reward",
       "query_orders"
@@ -326,6 +336,7 @@
       "type": "local-script",
       "script": "install.sh",
       "dryRun": "install.sh --dry-run",
+      "checkInstalled": "install.sh --check-installed",
       "sourceDirectory": "skill"
     }
   }
