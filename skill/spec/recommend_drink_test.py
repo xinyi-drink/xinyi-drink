@@ -88,6 +88,77 @@ class RecommendDrinkScriptTest(unittest.TestCase):
         load_mobile_mock.assert_not_called()
         self.load_activity_joined_mock.assert_not_called()
 
+    def test_show_mobile_status_preflights_locked_mobile_switch_without_fetching_context(self) -> None:
+        stdout = io.StringIO()
+
+        with patch.object(
+            recommend_drink,
+            "load_state",
+            return_value={
+                "mobile": "18210234223",
+                "activityJoined": True,
+                "updatedAt": "2026-05-07T03:00:00+00:00",
+            },
+        ) as load_state_mock, patch.object(
+            recommend_drink,
+            "fetch_json",
+        ) as fetch_json_mock, patch.object(
+            recommend_drink,
+            "load_config",
+        ) as load_config_mock, patch.object(
+            recommend_drink,
+            "load_mobile",
+        ) as load_mobile_mock, patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--show-mobile-status", "--candidate-mobile", "18539991423"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn("本地已保存手机号：18210234223", output)
+        self.assertIn("活动状态：已参与", output)
+        self.assertIn("候选手机号：18539991423", output)
+        self.assertIn("本机缓存已确认当前手机号参与活动，不能更换手机号重复领取", output)
+        load_state_mock.assert_called_once_with()
+        fetch_json_mock.assert_not_called()
+        load_config_mock.assert_not_called()
+        load_mobile_mock.assert_not_called()
+        self.load_activity_joined_mock.assert_not_called()
+
+    def test_show_mobile_status_preflights_unconfirmed_mobile_switch_without_fetching_context(self) -> None:
+        stdout = io.StringIO()
+
+        with patch.object(
+            recommend_drink,
+            "load_state",
+            return_value={
+                "mobile": "18210234223",
+                "activityJoined": False,
+            },
+        ), patch.object(
+            recommend_drink,
+            "fetch_json",
+        ) as fetch_json_mock, patch.object(
+            recommend_drink,
+            "load_config",
+        ) as load_config_mock, patch.object(
+            sys,
+            "argv",
+            ["recommend_drink.py", "--show-mobile-status", "--candidate-mobile", "18539991423"],
+        ), patch("sys.stdout", stdout):
+            exit_code = recommend_drink.main()
+
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn("候选手机号：18539991423", output)
+        self.assertIn("本地未确认已参与", output)
+        self.assertIn("需要用户明确确认后再走领取流程", output)
+        fetch_json_mock.assert_not_called()
+        load_config_mock.assert_not_called()
+        self.load_activity_joined_mock.assert_not_called()
+
     def test_show_mobile_status_handles_missing_local_state(self) -> None:
         stdout = io.StringIO()
 

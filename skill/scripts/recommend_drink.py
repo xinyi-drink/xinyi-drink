@@ -64,11 +64,19 @@ def is_personalized_query(args) -> bool:
     )
 
 
-def render_mobile_status() -> str:
+def render_mobile_status(candidate_mobile: str | None = None) -> str:
     state = load_state()
     mobile = state.get("mobile")
     if not isinstance(mobile, str) or not mobile.strip():
-        return "本地未保存新一咖啡手机号。\n"
+        lines = ["本地未保存新一咖啡手机号。"]
+        if candidate_mobile:
+            lines.extend(
+                [
+                    f"候选手机号：{candidate_mobile}",
+                    "本地没有可对比的参与状态；如需向后端查询或领取礼包，需要用户明确确认后再走领取流程。",
+                ]
+            )
+        return "\n".join(lines) + "\n"
 
     activity_joined = state.get("activityJoined")
     if activity_joined is True:
@@ -85,6 +93,16 @@ def render_mobile_status() -> str:
     updated_at = state.get("updatedAt")
     if updated_at:
         lines.append(f"缓存更新时间：{updated_at}")
+
+    if candidate_mobile:
+        lines.append(f"候选手机号：{candidate_mobile}")
+        if candidate_mobile == mobile:
+            lines.append("候选手机号与本地保存手机号一致。")
+        elif activity_joined is True:
+            lines.append("本机缓存已确认当前手机号参与活动，不能更换手机号重复领取。")
+        else:
+            lines.append("候选手机号与本地保存手机号不同；本地未确认已参与。")
+            lines.append("如需向后端同步或领取礼包，需要用户明确确认后再走领取流程。")
 
     return "\n".join(lines) + "\n"
 
@@ -109,6 +127,7 @@ def main() -> int:
         action="store_true",
         help="只读取本地缓存手机号和活动状态，不请求后端",
     )
+    parser.add_argument("--candidate-mobile", help="只读换号预检候选手机号，不请求后端")
     parser.add_argument("--query", help="用户问题或饮品名称")
     parser.add_argument("--scene", help="场景，如提神、下午茶、轻负担")
     parser.add_argument("--preference", help="偏好，如咖啡、茶、低卡")
@@ -123,7 +142,7 @@ def main() -> int:
 
     if args.show_mobile_status:
         debug_log(args.debug, "showing saved mobile status from local state")
-        sys.stdout.write(render_mobile_status())
+        sys.stdout.write(render_mobile_status(args.candidate_mobile))
         return 0
 
     resolved_mobile = args.mobile

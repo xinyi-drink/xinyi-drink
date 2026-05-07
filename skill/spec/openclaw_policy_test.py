@@ -43,7 +43,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("permissions: \"0600 when supported\"", frontmatter)
         self.assertIn("clearCommand: python3 scripts/recommend_drink.py --clear-mobile", frontmatter)
         self.assertIn("sharedMachineWarning: true", frontmatter)
-        self.assertIn("version: 1.2.2", frontmatter)
+        self.assertIn("version: 1.2.4", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -125,21 +125,22 @@ class OpenClawPolicyTest(unittest.TestCase):
         )
         system_instruction = payload["brand_prompt"]["system_instruction"]
 
-        forced_switch_phrase = "任何手机号变更、换号、改号、重新绑定或重新输入手机号"
-        self.assertIn(forced_switch_phrase, skill_md)
-        self.assertIn("必须调用 `scripts/claim_reward.py --mobile <手机号>`", skill_md)
-        self.assertIn("不能由 Agent 文本判断", skill_md)
-        self.assertIn("不能直接请求后端", skill_md)
+        switch_preflight_phrase = "手机号变更、换号、改号、重新绑定或重新输入手机号"
+        self.assertIn(switch_preflight_phrase, skill_md)
+        self.assertIn("先调用 `scripts/recommend_drink.py --show-mobile-status --candidate-mobile <手机号>`", skill_md)
+        self.assertIn("只有用户明确确认继续领取或同步后，才调用 `scripts/claim_reward.py --mobile <手机号>`", skill_md)
+        self.assertIn("状态查询和换号预检不能直接调用 `claim_reward.py`", skill_md)
 
         for phrase in ("换手机号", "改手机号", "重新绑定", "重新输入手机号", "另一个手机号"):
             self.assertIn(phrase, intent_routing)
-        self.assertIn("不能绕过 `claim_reward.py`", intent_routing)
-        self.assertIn(forced_switch_phrase, activity_flow)
+        self.assertIn("先调用 `recommend_drink.py --show-mobile-status --candidate-mobile <手机号>`", intent_routing)
+        self.assertIn("状态查询和换号预检不能直接调用 `claim_reward.py`", intent_routing)
+        self.assertIn("先走 `recommend_drink.py --show-mobile-status --candidate-mobile <手机号>`", activity_flow)
 
-        for phrase in ("换手机号", "改手机号", "重新绑定", "重新输入手机号"):
-            self.assertIn(phrase, claim_description)
-            self.assertIn(phrase, system_instruction)
-        self.assertIn("不能由 Agent 文本判断", system_instruction)
+        for phrase in ("这个手机号领过了吗", "换手机号", "改手机号", "重新绑定", "重新输入手机号"):
+            self.assertNotIn(phrase, claim_description)
+        self.assertIn("确认继续领取", claim_description)
+        self.assertIn("状态查询和换号预检必须先走 showMobileStatus", system_instruction)
 
     def test_activity_mobile_status_queries_are_forced_through_local_state(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -176,7 +177,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn('"version": "1.2.2"', json.dumps(payload, ensure_ascii=False))
+        self.assertIn('"version": "1.2.4"', json.dumps(payload, ensure_ascii=False))
         self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")
@@ -278,7 +279,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         )
         self.assertEqual(claim_reward_schema["required"], [])
         self.assertIn("useSavedMobile", claim_reward_schema["properties"])
-        self.assertIn("活动状态查询", claim_reward_schema["properties"]["useSavedMobile"]["description"])
+        self.assertIn("明确确认继续领取", claim_reward_schema["properties"]["useSavedMobile"]["description"])
         query_orders_schema = next(
             tool["inputSchema"]
             for tool in payload["tools"]
@@ -292,6 +293,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         )
         self.assertIn("useSavedMobile", recommend_schema["properties"])
         self.assertIn("showMobileStatus", recommend_schema["properties"])
+        self.assertIn("candidateMobile", recommend_schema["properties"])
         self.assertIn("默认不读取缓存手机号", payload["localStorage"]["autoReadPolicy"])
 
     def test_recommend_drink_does_not_claim_or_read_saved_mobile_by_default(self) -> None:
