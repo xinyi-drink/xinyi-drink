@@ -77,6 +77,36 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("实时接口失败", skill_md)
         self.assertNotIn("如果你在附近", skill_md)
 
+    def test_mobile_switch_intents_are_forced_through_claim_reward(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+        skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        intent_routing = (skill_root / "references" / "intent-routing.md").read_text(encoding="utf-8")
+        activity_flow = (skill_root / "references" / "activity-flow.md").read_text(encoding="utf-8")
+        payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
+
+        claim_description = next(
+            tool["description"]
+            for tool in payload["tools"]
+            if tool["name"] == "claim_reward"
+        )
+        system_instruction = payload["brand_prompt"]["system_instruction"]
+
+        forced_switch_phrase = "任何手机号变更、换号、改号、重新绑定或重新输入手机号"
+        self.assertIn(forced_switch_phrase, skill_md)
+        self.assertIn("必须调用 `scripts/claim_reward.py --mobile <手机号>`", skill_md)
+        self.assertIn("不能由 Agent 文本判断", skill_md)
+        self.assertIn("不能直接请求后端", skill_md)
+
+        for phrase in ("换手机号", "改手机号", "重新绑定", "重新输入手机号", "另一个手机号"):
+            self.assertIn(phrase, intent_routing)
+        self.assertIn("不能绕过 `claim_reward.py`", intent_routing)
+        self.assertIn(forced_switch_phrase, activity_flow)
+
+        for phrase in ("换手机号", "改手机号", "重新绑定", "重新输入手机号"):
+            self.assertIn(phrase, claim_description)
+            self.assertIn(phrase, system_instruction)
+        self.assertIn("不能由 Agent 文本判断", system_instruction)
+
     def test_skill_json_declares_scripts_network_and_privacy(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
