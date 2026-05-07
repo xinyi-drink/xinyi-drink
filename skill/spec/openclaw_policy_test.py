@@ -43,7 +43,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertIn("permissions: \"0600 when supported\"", frontmatter)
         self.assertIn("clearCommand: python3 scripts/recommend_drink.py --clear-mobile", frontmatter)
         self.assertIn("sharedMachineWarning: true", frontmatter)
-        self.assertIn("version: 1.2.1", frontmatter)
+        self.assertIn("version: 1.2.2", frontmatter)
 
     def test_skill_md_contains_compact_operating_guidance(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
@@ -141,6 +141,32 @@ class OpenClawPolicyTest(unittest.TestCase):
             self.assertIn(phrase, system_instruction)
         self.assertIn("不能由 Agent 文本判断", system_instruction)
 
+    def test_activity_mobile_status_queries_are_forced_through_local_state(self) -> None:
+        skill_root = Path(__file__).resolve().parents[1]
+        skill_md = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        intent_routing = (skill_root / "references" / "intent-routing.md").read_text(encoding="utf-8")
+        payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
+
+        recommend_description = next(
+            tool["description"]
+            for tool in payload["tools"]
+            if tool["name"] == "recommend_drink"
+        )
+        system_instruction = payload["brand_prompt"]["system_instruction"]
+
+        semantic_rule = "参与活动所用手机号、已保存手机号、历史参与手机号、领取礼包手机号、绑定活动手机号或当前活动手机号"
+        for content in (skill_md, intent_routing, recommend_description, system_instruction):
+            self.assertIn(semantic_rule, content)
+            self.assertIn("不限于示例原文", content)
+
+        for phrase in ("新一咖啡参与活动手机号是什么", "之前参与活动的手机号", "我上次领礼包用的手机号"):
+            self.assertIn(phrase, skill_md)
+            self.assertIn(phrase, intent_routing)
+        self.assertIn("必须调用 `scripts/recommend_drink.py --show-mobile-status`", skill_md)
+        self.assertIn("不要查 Agent 记忆、历史记忆或对话记忆", skill_md)
+        self.assertIn("不要回答成固定的活动手机号", skill_md)
+        self.assertIn("必须走本地状态文件", system_instruction)
+
     def test_skill_json_declares_scripts_network_and_privacy(self) -> None:
         skill_root = Path(__file__).resolve().parents[1]
         payload = json.loads((skill_root / "skill.json").read_text(encoding="utf-8"))
@@ -150,7 +176,7 @@ class OpenClawPolicyTest(unittest.TestCase):
         self.assertEqual(payload["post_install_prompts"], self.MAIN_USE_CASES)
         for use_case in self.MAIN_USE_CASES:
             self.assertIn(use_case, payload["description"])
-        self.assertIn('"version": "1.2.1"', json.dumps(payload, ensure_ascii=False))
+        self.assertIn('"version": "1.2.2"', json.dumps(payload, ensure_ascii=False))
         self.assertIn(f"version: {payload['version']}", skill_md)
         self.assertEqual(payload["homepage"], "https://github.com/xinyi-drink/xinyi-drink")
         self.assertEqual(payload["repository"], "https://github.com/xinyi-drink/xinyi-drink")
