@@ -8,7 +8,7 @@
     "查询菜单及饮品热量",
     "查询门店及等候时长"
   ],
-  "version": "1.2.5",
+  "version": "1.2.6",
   "packageType": "executable-skill",
   "instructionOnly": false,
   "sourceDirectory": "skill",
