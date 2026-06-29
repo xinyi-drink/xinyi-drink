@@ -17,7 +17,7 @@
 
 ## 网络边界
 
-- 默认后端：`https://ai.xinyicoffee.com/api`
+- 默认后端：`https://newone.world/api`
 - `GET /skill/xinyi/stores`: 不发送个人数据
 - `GET /skill/xinyi/context`: 仅在本轮提供手机号或内部 `--use-saved-mobile` 个性化场景发送 `mobile` query
 - `GET /skill/xinyi/orders`: 发送 `mobile` query，可选 `status` query；不传查全部订单，`status=2` 查正在进行中订单，`status=4` 查历史订单/已完成订单

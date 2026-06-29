@@ -16,7 +16,7 @@
 
 ## 后端与配置
 
-- 默认后端来自 `config/defaults.json`：`https://ai.xinyicoffee.com/api`。
+- 默认后端来自 `config/defaults.json`：`https://newone.world/api`。
 - 可通过 `XINYI_API_BASE_URL` 覆盖默认后端；使用真实手机号前应确认该后端可信。
 - 不要把 `XINYI_API_BASE_URL` 指向不信任后端；手机号、活动状态和订单上下文会由该后端处理。
 - 可通过 `XINYI_TIMEOUT_SECONDS` 覆盖请求超时时间。

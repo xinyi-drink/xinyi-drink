@@ -74,7 +74,7 @@ metadata:
       - XINYI_TIMEOUT_SECONDS
       - XINYI_DRINK_STATE_FILE
     network:
-      defaultApiBaseUrl: https://ai.xinyicoffee.com/api
+      defaultApiBaseUrl: https://newone.world/api
       endpoints:
         - method: POST
           path: /skill/xinyi/claim

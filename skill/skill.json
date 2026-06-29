@@ -149,9 +149,7 @@
         "requiresUserOwnedPhone": true,
         "rejectThirdPartyPhone": true,
         "trustBoundary": "xinyi-backend",
-        "personalData": [
-          "mobile"
-        ],
+        "personalData": ["mobile"],
         "userGuidance": "only-use-your-own-phone-number"
       }
     },
@@ -190,10 +188,7 @@
           },
           "status": {
             "type": "integer",
-            "enum": [
-              2,
-              4
-            ],
+            "enum": [2, 4],
             "description": "可选订单状态分组；不传查询全部订单，2=正在进行中订单，4=历史订单/已完成订单"
           },
           "query": {
@@ -212,10 +207,7 @@
         "requiresUserOwnedPhone": true,
         "rejectThirdPartyPhone": true,
         "trustBoundary": "xinyi-backend",
-        "personalData": [
-          "mobile",
-          "order_history"
-        ],
+        "personalData": ["mobile", "order_history"],
         "userGuidance": "only-use-your-own-phone-number"
       }
     },
@@ -267,31 +259,24 @@
     }
   ],
   "network": {
-    "default_api_base_url": "https://ai.xinyicoffee.com/api",
+    "default_api_base_url": "https://newone.world/api",
     "endpoints": [
       {
         "method": "POST",
         "path": "/skill/xinyi/claim",
-        "sends": [
-          "mobile"
-        ],
+        "sends": ["mobile"],
         "purpose": "查询并领取Skill用户大礼包；领取结果以服务端响应为准"
       },
       {
         "method": "GET",
         "path": "/skill/xinyi/context",
-        "sends": [
-          "optional mobile query"
-        ],
+        "sends": ["optional mobile query"],
         "purpose": "获取商品、天气和可选订单摘要"
       },
       {
         "method": "GET",
         "path": "/skill/xinyi/orders",
-        "sends": [
-          "mobile query",
-          "optional status query"
-        ],
+        "sends": ["mobile query", "optional status query"],
         "purpose": "查询用户订单，覆盖全部订单、历史订单/已完成订单和正在进行中订单"
       },
       {
@@ -304,11 +289,7 @@
   },
   "localStorage": {
     "defaultPath": "~/.xinyi-drink/state.json",
-    "contents": [
-      "mobile",
-      "activityJoined",
-      "updatedAt"
-    ],
+    "contents": ["mobile", "activityJoined", "updatedAt"],
     "permissions": "0600 when supported",
     "autoReadPolicy": "claim_reward 仅活动状态查询场景读取；recommend_drink 默认不读取缓存手机号；query_orders 仅订单/偏好分析场景读取；内部 --use-saved-mobile 才读取",
     "clearCommand": "python3 scripts/recommend_drink.py --clear-mobile",
@@ -316,11 +297,7 @@
   },
   "privacy": {
     "data_subject": "user-provided-or-saved-mobile-owner",
-    "personal_data": [
-      "mobile",
-      "activity_status",
-      "order_history"
-    ],
+    "personal_data": ["mobile", "activity_status", "order_history"],
     "user_guidance": [
       "only-use-your-own-phone-number",
       "clear-cache-on-shared-machines",
@@ -328,10 +305,7 @@
     ],
     "backend_trust_required": true,
     "third_party_phone_policy": "reject-claim-and-order-query",
-    "explicit_intent_required_for": [
-      "claim_reward",
-      "query_orders"
-    ],
+    "explicit_intent_required_for": ["claim_reward", "query_orders"],
     "shared_machine_clear_command": "python3 scripts/recommend_drink.py --clear-mobile"
   },
   "environment": [
@@ -343,11 +317,7 @@
     "system_instruction": "回答新一好喝相关问题时，优先使用脚本返回的实时上下文；不要编造门店、商品、券名、订单或活动状态。推荐回答要像懂茶饮也懂咖啡的店员姐姐，熟门店、懂口味，会认真帮用户挑选，松弛有温度；信息有层次但不要报告腔。用户语义上询问参与活动所用手机号、已保存手机号、历史参与手机号、领取礼包手机号、绑定活动手机号或当前活动手机号时，不限于示例原文，必须走本地状态文件，使用 showMobileStatus，不查 Agent 记忆、历史记忆或对话记忆，不回答成固定的活动手机号。状态查询和换号预检必须先走 showMobileStatus，本轮提供手机号时传 candidateMobile；只有用户明确确认继续领取或同步后，才调用 claim_reward。个性化推荐时把用户常点饮品当口味参考，优先推荐口味相邻但不常点或未点过的饮品，不要默认推荐用户最常点的饮品。本机缓存已确认领取成功后，不能更换手机号重复领取；同一手机号再次领取或查询时，本地已领取状态优先，直接提示该手机号已经领取过并说明已领取内容，不依赖本次后端结果；最终回答不要解释内部领取规则，也不要输出发放统计明细等技术化表述。只有用户问活动、福利或领取且未提供手机号时，才请用户发送微信小程序【新一咖啡】绑定手机号；查询确认未注册或未登录时，再说明Skill用户大礼包内容、活动规则和两步领取方法，不要回答成没有其他活动。用户不是在问活动、福利或领取时，即使已参与，也不要向最终回答暴露活动状态，不要主动提身份验证、礼包到账或领取。活动参与成功或领取成功时，用普通陈述说明礼包已到账和实际券名；已领取过时说明该手机号已经领取过 Skill用户大礼包和已领取内容。",
     "tone": {
       "personality": "warm_practical_honest",
-      "avoid": [
-        "marketing_jargon",
-        "fabricated_facts",
-        "robotic_report_style"
-      ]
+      "avoid": ["marketing_jargon", "fabricated_facts", "robotic_report_style"]
     }
   },
   "openclaw": {
